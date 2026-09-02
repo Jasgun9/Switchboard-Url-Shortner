@@ -1,0 +1,60 @@
+{% extends "web/base.html" %}
+
+{% block title %}{% if link %}Edit /{{ link.code }}{% else %}New link{% endif %} — short.{% endblock %}
+
+{% block content %}
+<div style="max-width: 560px" data-animate="form">
+
+  <a class="back-link" href="{% if link %}{% url 'link-detail' pk=link.pk %}{% else %}{% url 'dashboard' %}{% endif %}">
+    <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-left"/></svg>{% if link %}Back to /{{ link.code }}{% else %}All links{% endif %}
+  </a>
+
+  <div class="page-head">
+    <div>
+      <h1>{% if link %}Edit link{% else %}New link{% endif %}</h1>
+      <p class="lede">
+        {% if link %}
+          The short code <span class="mono">/{{ link.code }}</span> is fixed — anything already sharing it keeps
+          working. Create a new link if you need a different code.
+        {% else %}
+          Leave the alias blank for a generated code.
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-body">
+      <form method="post" novalidate data-loading-form>
+        {% csrf_token %}
+        {% include "web/_form_errors.html" %}
+
+        {% include "web/_field.html" with field=form.destination %}
+        {% include "web/_field.html" with field=form.title hint="Optional label shown in your dashboard." %}
+
+        {% if not link %}
+          {% include "web/_field.html" with field=form.alias hint="Optional. Letters, digits, hyphens and underscores." %}
+        {% endif %}
+
+        {% include "web/_field.html" with field=form.expires_at hint="Optional, in UTC. After this the link stops redirecting." %}
+
+        {% if link and link.has_password %}
+          {% include "web/_field.html" with field=form.password hint="Leave blank to keep the current password." reveal=True %}
+          {% include "web/_field.html" with field=form.remove_password %}
+        {% else %}
+          {% include "web/_field.html" with field=form.password hint="Optional. Visitors must enter this before being redirected." reveal=True %}
+        {% endif %}
+
+        {% if link %}
+          {% include "web/_field.html" with field=form.is_active %}
+        {% endif %}
+
+        <div class="row" style="margin-top: var(--s-5); padding-top: var(--s-4); border-top: 1px solid var(--border)">
+          <button type="submit" class="btn btn-primary">{% if link %}Save changes{% else %}Create link{% endif %}</button>
+          <a class="btn btn-quiet" href="{% if link %}{% url 'link-detail' pk=link.pk %}{% else %}{% url 'dashboard' %}{% endif %}">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "web/base.html" %}
+
+{% block title %}Create an account — short.{% endblock %}
+
+{% block content %}
+<div class="auth" data-animate="auth">
+  <div class="auth-head">
+    <h1>Create an account</h1>
+    <p class="lede">Keep your links, track their clicks and issue API keys.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-body">
+      <form method="post" novalidate data-loading-form>
+        {% csrf_token %}
+        {% include "web/_form_errors.html" %}
+        {% include "web/_field.html" with field=form.email %}
+        {% include "web/_field.html" with field=form.display_name hint="Optional." %}
+        {% include "web/_field.html" with field=form.password hint="At least 10 characters." reveal=True %}
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--s-6)">Create account</button>
+      </form>
+    </div>
+  </div>
+
+  <p class="auth-alt">Already have an account? <a href="{% url 'login' %}">Sign in</a>.</p>
+</div>
+{% endblock %}

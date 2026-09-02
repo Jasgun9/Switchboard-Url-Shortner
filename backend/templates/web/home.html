@@ -1,0 +1,182 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}short. — link management with click analytics{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/shorten.js' %}" defer></script>{% endblock %}
+
+{% block main %}
+
+<section class="hero">
+  <div class="shell">
+    {% include "web/_messages.html" %}
+
+    <div class="hero-inner" data-animate="hero">
+      <span class="eyebrow">Link shortener</span>
+      <h1 class="hero-headline">Short links you can actually measure.</h1>
+      <p class="hero-lede">
+        Paste a URL, get a short one. Every link carries click analytics, a QR code, optional expiry and
+        optional password protection.
+      </p>
+    </div>
+
+    <div class="hero-form" data-animate="form">
+      <div data-shorten-form>
+        <form method="post" novalidate data-shorten action="{% url 'home' %}">
+          {% csrf_token %}
+
+          <div class="shorten-row {% if form.destination.errors %}invalid{% endif %}">
+            <label class="sr-only" for="{{ form.destination.id_for_label }}">Destination URL</label>
+            {{ form.destination }}
+            <button type="submit" class="btn btn-primary">Shorten link</button>
+          </div>
+
+          <p class="field-error" style="justify-content: center" data-error-for="destination" {% if not form.destination.errors %}hidden{% endif %}>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-alert"/></svg>
+            <span>{{ form.destination.errors.0 }}</span>
+          </p>
+          <p class="field-error" style="justify-content: center" data-error-for="__all__" {% if not form.non_field_errors %}hidden{% endif %}>
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-alert"/></svg>
+            <span>{{ form.non_field_errors.0 }}</span>
+          </p>
+
+          <div class="disclosure">
+            <button type="button" class="disclosure-toggle" data-disclosure aria-expanded="false" aria-controls="shorten-advanced">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-down"/></svg>
+              Advanced options
+            </button>
+
+            <div class="disclosure-panel" id="shorten-advanced" hidden>
+              <div class="disclosure-inner">
+                {% include "web/_field.html" with field=form.alias hint="Letters, digits, hyphens, underscores." %}
+                {% include "web/_field.html" with field=form.expires_at hint="UTC. Leave blank to never expire." %}
+                {% include "web/_field.html" with field=form.password hint="Visitors must enter it first." %}
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div class="result {% if created %}is-visible{% endif %}" data-result>
+        <div class="result-card">
+          <span class="eyebrow">Your short link</span>
+
+          <div class="result-url">
+            <a data-result-url href="{% if created %}{{ created.short_url }}{% else %}#{% endif %}" rel="noreferrer">{% if created %}{{ created.short_url }}{% endif %}</a>
+            <button type="button" class="btn copy-btn" data-copy="{% if created %}{{ created.short_url }}{% endif %}" data-result-copy>
+              <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg> Copy</span>
+              <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg> Copied</span>
+            </button>
+          </div>
+
+          <p class="meta result-dest" data-result-dest {% if created %}title="{{ created.destination }}"{% endif %}>{% if created %}Redirects to {{ created.destination|truncatechars:90 }}{% endif %}</p>
+
+          <div class="row" style="margin-top: var(--s-6); align-items: flex-start; gap: var(--s-6)">
+            <img class="qr-thumb" data-result-qr alt="QR code for the short link"
+                 src="{% if created %}{% url 'qr-code' code=created.code %}{% endif %}" width="148" height="148">
+            <div class="stack-sm">
+              <a class="btn" data-result-download download href="{% if created %}{% url 'qr-code' code=created.code %}{% endif %}">
+                <svg class="icon icon-sm" aria-hidden="true"><use href="#i-download"/></svg>Download QR
+              </a>
+              {% if user.is_authenticated %}
+                <a class="btn" data-result-analytics href="{% if created %}{% url 'link-analytics' pk=created.pk %}{% endif %}">
+                  <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chart"/></svg>View analytics
+                </a>
+              {% endif %}
+              <button type="button" class="btn btn-quiet" data-result-reset>Shorten another</button>
+            </div>
+          </div>
+
+          {% if not user.is_authenticated %}
+            <p class="meta" style="margin-top: var(--s-6)">
+              This link is not attached to an account. <a href="{% url 'register' %}">Create one</a> to edit it,
+              see analytics or delete it later.
+            </p>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="section section-white">
+  <div class="shell">
+    <div class="section-head center" data-animate="features-head">
+      <h2 class="section-title">What every link gets</h2>
+      <p class="section-lede">
+        The same capabilities apply whether a link is created here, from the dashboard, or through the API.
+      </p>
+    </div>
+
+    <div class="feature-grid" data-animate="features">
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-chart"/></svg></span>
+        <h3>Click analytics</h3>
+        <p>Countries, devices, browsers, operating systems and referrers, recorded on every visit.</p>
+      </article>
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-qr"/></svg></span>
+        <h3>QR code</h3>
+        <p>A PNG generated on demand for every short link, ready to download and place anywhere.</p>
+      </article>
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-clock"/></svg></span>
+        <h3>Expiry</h3>
+        <p>Set a moment after which the link stops redirecting. Useful for campaigns and time-boxed access.</p>
+      </article>
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-lock"/></svg></span>
+        <h3>Password protection</h3>
+        <p>Gate the destination behind a password. Attempts are rate limited and never stored in the clear.</p>
+      </article>
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-key"/></svg></span>
+        <h3>REST API</h3>
+        <p>Create and manage links from scripts with a scoped API key. Everything the dashboard does.</p>
+      </article>
+      <article class="feature card-hover">
+        <span class="feature-icon"><svg class="icon icon-lg" aria-hidden="true"><use href="#i-link"/></svg></span>
+        <h3>Custom aliases</h3>
+        <p>Claim a readable path instead of a generated code, with reserved names kept out of reach.</p>
+      </article>
+    </div>
+  </div>
+</section>
+
+<section class="section section-alt">
+  <div class="shell">
+    <div class="api-split">
+      <div data-animate="api-text">
+        <span class="eyebrow">Developer API</span>
+        <h2 class="section-title" style="margin-top: var(--s-4)">From the command line</h2>
+        <p class="section-lede">
+          Issue a scoped key and create links from a deploy pipeline, a script, or your terminal. Responses are
+          plain JSON with a consistent error envelope.
+        </p>
+        <p style="margin-top: var(--s-8)">
+          <a class="btn btn-primary btn-lg" href="{% url 'api-docs' %}">
+            Read the API reference
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-external"/></svg>
+          </a>
+        </p>
+      </div>
+
+      <div class="code" data-animate="api-code">
+        <div class="code-head">
+          <span>Shell</span>
+          <button type="button" class="btn btn-sm btn-icon copy-btn" aria-label="Copy command"
+                  data-copy="curl -X POST {{ web_domain }}/api/v1/urls/ -H 'Authorization: Bearer $SHORT_KEY' -H 'Content-Type: application/json' -d '{&quot;destination&quot;:&quot;https://example.com&quot;}'">
+            <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg></span>
+            <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+          </button>
+        </div>
+<pre>curl -X POST {{ web_domain }}/api/v1/urls/ \
+  -H <span class="tok-str">"Authorization: Bearer $SHORT_KEY"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"destination":"https://example.com"}'</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% endblock %}

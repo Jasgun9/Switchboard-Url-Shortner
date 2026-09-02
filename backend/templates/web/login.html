@@ -1,0 +1,27 @@
+{% extends "web/base.html" %}
+
+{% block title %}Sign in — short.{% endblock %}
+
+{% block content %}
+<div class="auth" data-animate="auth">
+  <div class="auth-head">
+    <h1>Sign in</h1>
+    <p class="lede">Manage your links, analytics and API keys.</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-body">
+      <form method="post" novalidate data-loading-form>
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ next }}">
+        {% include "web/_form_errors.html" %}
+        {% include "web/_field.html" with field=form.email %}
+        {% include "web/_field.html" with field=form.password reveal=True %}
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: var(--s-6)">Sign in</button>
+      </form>
+    </div>
+  </div>
+
+  <p class="auth-alt">No account yet? <a href="{% url 'register' %}">Create one</a>.</p>
+</div>
+{% endblock %}

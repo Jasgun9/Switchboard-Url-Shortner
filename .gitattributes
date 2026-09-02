@@ -1,0 +1,9 @@
+# Store and check out everything with LF. The deployment target is Linux, and a
+# systemd unit or nginx config that picks up CRLF on a Windows checkout will
+# misbehave once it is copied to the server.
+* text=auto eol=lf
+
+*.png binary
+*.ico binary
+*.mmdb binary
+*.sqlite3 binary

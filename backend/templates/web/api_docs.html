@@ -1,0 +1,236 @@
+{% extends "web/base.html" %}
+{% load static %}
+
+{% block title %}API reference — short.{% endblock %}
+
+{% block scripts %}<script src="{% static 'js/docs.js' %}" defer></script>{% endblock %}
+
+{% block content %}
+<div class="page-head" data-animate="head">
+  <div>
+    <p class="eyebrow">Reference</p>
+    <h1>API</h1>
+    <p class="lede">
+      A small JSON API over the same data as the dashboard, versioned under <code>/api/v1/</code>. Everything the
+      web interface can do, a script can do.
+    </p>
+  </div>
+</div>
+
+<div class="docs" data-animate="docs">
+  <nav class="docs-nav" aria-label="On this page">
+    <ul>
+      <li><a href="#authentication">Authentication</a></li>
+      <li><a href="#endpoints">Endpoints</a></li>
+      <li><a href="#responses">Responses</a></li>
+      <li><a href="#errors">Errors</a></li>
+      <li><a href="#limits">Rate limits</a></li>
+    </ul>
+  </nav>
+
+  <div>
+    <section class="docs-section" id="authentication">
+      <h2>Authentication</h2>
+      <p>
+        Send an API key as a bearer token. Keys are scoped to the account that created them, so a request can only
+        ever read or write that account's links. Keys cannot create further keys — that needs a signed-in session.
+      </p>
+
+      <div class="code">
+        <div class="code-head">
+          <span>Shell</span>
+          <button type="button" class="btn btn-sm btn-icon copy-btn" aria-label="Copy example"
+                  data-copy="curl -X POST {{ web_domain }}/api/v1/urls/ -H 'Authorization: Bearer usk_1a2b3c4d_SECRET' -H 'Content-Type: application/json' -d '{&quot;destination&quot;:&quot;https://example.com/a/long/url&quot;,&quot;alias&quot;:&quot;portfolio&quot;}'">
+            <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg></span>
+            <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+          </button>
+        </div>
+<pre>curl -X POST {{ web_domain }}/api/v1/urls/ \
+  -H <span class="tok-str">"Authorization: Bearer usk_1a2b3c4d_&lt;secret&gt;"</span> \
+  -H <span class="tok-str">"Content-Type: application/json"</span> \
+  -d <span class="tok-str">'{"destination": "https://example.com/a/long/url", "alias": "portfolio"}'</span></pre>
+      </div>
+
+      <p>
+        {% if user.is_authenticated %}
+          Manage your keys on the <a href="{% url 'api-keys' %}">API keys</a> page.
+        {% else %}
+          <a href="{% url 'register' %}">Create an account</a> to issue a key.
+        {% endif %}
+      </p>
+    </section>
+
+    <section class="docs-section" id="endpoints">
+      <h2>Endpoints</h2>
+
+      <div>
+        <div class="endpoint">
+          <span class="method method-post">POST</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/</span>
+            <p>Create a short link. Works without credentials at a lower rate limit; an anonymous link has no owner and cannot be edited later.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/</span>
+            <p>List your links. Accepts <code>search</code>, <code>status</code> (active, expired, disabled), <code>ordering</code>, <code>page</code> and <code>page_size</code>.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/{id}/</span>
+            <p>Retrieve one of your links.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-patch">PATCH</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/{id}/</span>
+            <p>Update <code>destination</code>, <code>title</code>, <code>expires_at</code>, <code>password</code> or <code>is_active</code>. The short code itself cannot change.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-delete">DELETE</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/{id}/</span>
+            <p>Delete a link. It stops redirecting immediately and its click history is kept, but the code is released and can be claimed again.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div>
+            <span class="endpoint-path">/api/v1/urls/{id}/analytics/</span>
+            <p>Click analytics for one link. Accepts <code>?days=1..365</code>, default 30.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div>
+            <span class="endpoint-path">/api/v1/api-keys/</span>
+            <p>List your API keys. Session authentication only.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-post">POST</span>
+          <div>
+            <span class="endpoint-path">/api/v1/api-keys/</span>
+            <p>Create a key. The secret is returned once, in the <code>token</code> field.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-delete">DELETE</span>
+          <div>
+            <span class="endpoint-path">/api/v1/api-keys/{id}/</span>
+            <p>Revoke a key. The row is kept so the audit trail survives.</p>
+          </div>
+        </div>
+        <div class="endpoint">
+          <span class="method method-get">GET</span>
+          <div>
+            <span class="endpoint-path">/api/v1/qr/{code}.png</span>
+            <p>QR code for a short link, as a PNG. Public, since it only encodes the already-public short URL.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="docs-section" id="responses">
+      <h2>Responses</h2>
+      <p>A created link:</p>
+
+      <div class="code">
+        <div class="code-head">
+          <span>201 Created</span>
+          <button type="button" class="btn btn-sm btn-icon copy-btn" aria-label="Copy response"
+                  data-copy='{"id": 42, "code": "portfolio", "short_url": "{{ short_domain }}/portfolio", "destination": "https://example.com/a/long/url", "has_password": false, "is_active": true, "is_expired": false, "expires_at": null, "click_count": 0, "qr_url": "{{ web_domain }}/api/v1/qr/portfolio.png"}'>
+            <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg></span>
+            <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+          </button>
+        </div>
+<pre>{
+  <span class="tok-key">"id"</span>: 42,
+  <span class="tok-key">"code"</span>: <span class="tok-str">"portfolio"</span>,
+  <span class="tok-key">"short_url"</span>: <span class="tok-str">"{{ short_domain }}/portfolio"</span>,
+  <span class="tok-key">"destination"</span>: <span class="tok-str">"https://example.com/a/long/url"</span>,
+  <span class="tok-key">"has_password"</span>: false,
+  <span class="tok-key">"is_active"</span>: true,
+  <span class="tok-key">"is_expired"</span>: false,
+  <span class="tok-key">"expires_at"</span>: null,
+  <span class="tok-key">"click_count"</span>: 0,
+  <span class="tok-key">"qr_url"</span>: <span class="tok-str">"{{ web_domain }}/api/v1/qr/portfolio.png"</span>,
+  <span class="tok-key">"created_at"</span>: <span class="tok-str">"2025-01-04T10:12:03.114Z"</span>
+}</pre>
+      </div>
+
+      <p>List responses are paginated and wrap the rows in <code>results</code>:</p>
+
+      <div class="code">
+        <div class="code-head"><span>200 OK</span></div>
+<pre>{
+  <span class="tok-key">"count"</span>: 42,
+  <span class="tok-key">"page"</span>: 1,
+  <span class="tok-key">"page_size"</span>: 20,
+  <span class="tok-key">"total_pages"</span>: 3,
+  <span class="tok-key">"results"</span>: [ <span class="tok-com">/* links */</span> ]
+}</pre>
+      </div>
+    </section>
+
+    <section class="docs-section" id="errors">
+      <h2>Errors</h2>
+      <p>Every failure uses the same envelope. Validation failures add a <code>details</code> object keyed by field.</p>
+
+      <div class="code">
+        <div class="code-head"><span>409 Conflict</span></div>
+<pre>{
+  <span class="tok-key">"error"</span>: {
+    <span class="tok-key">"code"</span>: <span class="tok-str">"ALIAS_ALREADY_EXISTS"</span>,
+    <span class="tok-key">"message"</span>: <span class="tok-str">"The requested alias is already in use."</span>
+  }
+}</pre>
+      </div>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Code</th><th>HTTP</th><th>Meaning</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">VALIDATION_ERROR</td><td class="mono">400</td><td>One or more fields were rejected; see <code>error.details</code>.</td></tr>
+              <tr><td class="mono">ALIAS_ALREADY_EXISTS</td><td class="mono">409</td><td>Another link already claims that custom alias.</td></tr>
+              <tr><td class="mono">AUTHENTICATION_REQUIRED</td><td class="mono">401</td><td>No credentials were supplied.</td></tr>
+              <tr><td class="mono">AUTHENTICATION_FAILED</td><td class="mono">401</td><td>The API key is invalid, revoked or expired.</td></tr>
+              <tr><td class="mono">NOT_FOUND</td><td class="mono">404</td><td>No such resource — or it belongs to someone else.</td></tr>
+              <tr><td class="mono">RATE_LIMITED</td><td class="mono">429</td><td>Too many requests; wait for <code>Retry-After</code> seconds.</td></tr>
+              <tr><td class="mono">CODE_GENERATION_FAILED</td><td class="mono">503</td><td>Could not allocate a free short code. Retry.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section class="docs-section" id="limits">
+      <h2>Rate limits</h2>
+      <p>
+        Limits are counted per account for authenticated requests and per IP otherwise. Exceeding one returns
+        <code>429</code> with a <code>Retry-After</code> header giving the seconds to wait.
+      </p>
+
+      <div class="panel">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Scope</th><th class="num">Requests</th><th>Window</th></tr></thead>
+            <tbody>
+              <tr><td>API requests</td><td class="num mono">1000</td><td class="meta">per hour</td></tr>
+              <tr><td>Link creation, signed in</td><td class="num mono">120</td><td class="meta">per hour</td></tr>
+              <tr><td>Link creation, anonymous</td><td class="num mono">10</td><td class="meta">per hour</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

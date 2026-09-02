@@ -1,0 +1,132 @@
+{% extends "web/base.html" %}
+
+{% block title %}Analytics for /{{ link.code }} — short.{% endblock %}
+
+{% block content %}
+<div class="stack">
+
+  <div data-animate="head">
+    <a class="back-link" href="{% url 'link-detail' pk=link.pk %}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-left"/></svg>Back to /{{ link.code }}
+    </a>
+
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Analytics</p>
+        <h1 class="mono">/{{ link.code }}</h1>
+        <p class="lede">{{ link.destination|truncatechars:80 }}</p>
+      </div>
+      <div class="page-head-actions" role="group" aria-label="Time range">
+        {% for window in windows %}
+          <a class="btn btn-sm {% if window == days %}btn-primary{% endif %}" href="?days={{ window }}"
+             {% if window == days %}aria-current="true"{% endif %}>{{ window }}d</a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  {% if data.total_clicks %}
+    <dl class="stats" data-animate="stats">
+      <div class="stat"><dt>Clicks · {{ days }}d</dt><dd>{{ data.clicks_in_window }}</dd></div>
+      <div class="stat"><dt>Clicks · all time</dt><dd>{{ data.total_clicks }}</dd></div>
+      <div class="stat"><dt>Unique visitors</dt><dd>{{ data.unique_visitors }}</dd></div>
+      <div class="stat">
+        <dt>Peak day</dt>
+        <dd>{{ peak }}<span class="stat-note"> clicks</span></dd>
+      </div>
+    </dl>
+
+    <div class="panel" data-animate="chart">
+      <div class="panel-head">
+        <h2>Clicks per day</h2>
+        <span class="meta">Last {{ days }} days</span>
+      </div>
+      <div class="panel-body">
+        <div class="chart-frame">
+          {% if peak %}<span class="chart-ymax">{{ peak }}</span>{% endif %}
+          <div class="chart" role="img"
+               aria-label="Daily clicks over the last {{ days }} days: {{ data.clicks_in_window }} in total, peaking at {{ peak }} in one day.">
+            {% for point in series %}
+              <div class="chart-col" title="{{ point.date }} — {{ point.clicks }} click{{ point.clicks|pluralize }}">
+                <div class="chart-bar{% if not point.clicks %} zero{% endif %}" style="height: {{ point.height }}%"></div>
+              </div>
+            {% endfor %}
+          </div>
+        </div>
+        <div class="chart-axis">
+          <span>{{ first_date }}</span>
+          <span>{{ last_date }}</span>
+        </div>
+
+        <details class="data-table">
+          <summary>Show the numbers</summary>
+          <div class="table-wrap" style="max-height: 260px; overflow-y: auto; margin-top: var(--s-2)">
+            <table>
+              <thead><tr><th>Date</th><th class="num">Clicks</th></tr></thead>
+              <tbody>
+                {% for point in series reversed %}
+                  {% if point.clicks %}
+                    <tr><td class="mono">{{ point.date }}</td><td class="num">{{ point.clicks }}</td></tr>
+                  {% endif %}
+                {% endfor %}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </div>
+    </div>
+
+    <div class="breakdowns" data-animate="breakdowns">
+      {% for title, rows in breakdowns %}
+        <section class="panel">
+          <div class="panel-head"><h2>{{ title }}</h2></div>
+          {% if rows %}
+            <table class="barlist" style="margin: var(--s-2) 0">
+              <caption class="sr-only">{{ title }} by clicks</caption>
+              <tbody>
+                {% for row in rows %}
+                  <tr>
+                    <td class="label" title="{{ row.value }}">{{ row.value }}</td>
+                    <td class="bar-cell">
+                      <div class="bar-track"><div class="bar-fill" style="width: {{ row.share }}%"></div></div>
+                    </td>
+                    <td class="num" style="width: 1%">{{ row.clicks }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="empty empty-sm">Nothing recorded in this window.</p>
+          {% endif %}
+        </section>
+      {% endfor %}
+    </div>
+
+    <p class="meta">
+      Clicks are recorded in the background, so activity from the last few seconds may not appear yet. Visitor IPs
+      are stored only as salted one-way digests, and raw click rows are deleted once they age out.
+    </p>
+
+  {% else %}
+    <div class="panel" data-animate="empty">
+      <div class="empty">
+        <h3>No clicks yet</h3>
+        <p>
+          Once someone opens <span class="mono">{{ link.short_url }}</span>, this page fills in with countries,
+          devices, browsers and referrers.
+        </p>
+        <div class="row" style="justify-content: center">
+          <button type="button" class="btn copy-btn" data-copy="{{ link.short_url }}">
+            <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg> Copy link</span>
+            <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg> Copied</span>
+          </button>
+          <a class="btn" href="{% url 'qr-code' code=link.code %}" download="{{ link.code }}.png">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-qr"/></svg>Download QR
+          </a>
+        </div>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}

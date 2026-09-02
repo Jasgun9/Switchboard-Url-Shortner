@@ -1,0 +1,141 @@
+{% extends "web/base.html" %}
+
+{% block title %}/{{ link.code }} — short.{% endblock %}
+
+{% block content %}
+<div class="stack">
+
+  <div data-animate="head">
+    <a class="back-link" href="{% url 'dashboard' %}">
+      <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-left"/></svg>All links
+    </a>
+
+    <div class="page-head">
+      <div>
+        <p class="eyebrow">Short link</p>
+        <h1 class="mono">/{{ link.code }}</h1>
+        <p class="lede">{{ link.title|default:"No title" }}</p>
+      </div>
+      <div class="page-head-actions">
+        <a class="btn" href="{% url 'link-analytics' pk=link.pk %}">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chart"/></svg>Analytics
+        </a>
+        <a class="btn" href="{% url 'link-edit' pk=link.pk %}">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-edit"/></svg>Edit
+        </a>
+        <form method="post" action="{% url 'link-delete' pk=link.pk %}" data-confirm="confirm-delete">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-danger">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-trash"/></svg>Delete
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="split" data-animate="body">
+    <div class="stack">
+      <div class="panel">
+        <div class="panel-head">
+          <h2>Details</h2>
+          {% if not link.is_code_released %}
+            <button type="button" class="btn btn-sm copy-btn" data-copy="{{ link.short_url }}">
+              <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg> Copy link</span>
+              <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg> Copied</span>
+            </button>
+          {% endif %}
+        </div>
+        <dl class="spec">
+          <div>
+            <dt>Short link</dt>
+            <dd>
+              {% if link.is_code_released %}
+                <span class="mono">{{ link.short_url }}</span>
+                <span class="cell-sub">
+                  This alias was released and may now point somewhere else. Create a new link to get a working one.
+                </span>
+              {% else %}
+                <a class="mono" href="{{ link.short_url }}" rel="noreferrer">{{ link.short_url }}</a>
+              {% endif %}
+            </dd>
+          </div>
+          <div>
+            <dt>Destination</dt>
+            <dd><a href="{{ link.destination }}" rel="noreferrer nofollow">{{ link.destination }}</a></dd>
+          </div>
+          <div>
+            <dt>Status</dt>
+            <dd>
+              {% if not link.is_active %}
+                <span class="status status-off">Disabled</span>
+              {% elif link.is_expired %}
+                <span class="status status-expired">Expired</span>
+              {% else %}
+                <span class="status status-active">Active</span>
+              {% endif %}
+            </dd>
+          </div>
+          <div>
+            <dt>Password</dt>
+            <dd>{% if link.has_password %}Required{% else %}<span class="muted">Not set</span>{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Code type</dt>
+            <dd>{% if link.is_custom_alias %}Custom alias{% else %}Generated{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Expires</dt>
+            <dd>{% if link.expires_at %}<span class="mono">{{ link.expires_at|date:"j M Y, H:i" }} UTC</span>{% else %}<span class="muted">Never</span>{% endif %}</dd>
+          </div>
+          <div>
+            <dt>Created</dt>
+            <dd><span class="mono">{{ link.created_at|date:"j M Y, H:i" }} UTC</span></dd>
+          </div>
+          <div>
+            <dt>Last updated</dt>
+            <dd><span class="mono">{{ link.updated_at|date:"j M Y, H:i" }} UTC</span></dd>
+          </div>
+        </dl>
+      </div>
+    </div>
+
+    <div class="stack">
+      <dl class="stats" style="grid-template-columns: 1fr 1fr">
+        <div class="stat"><dt>Clicks</dt><dd>{{ link.click_count }}</dd></div>
+        <div class="stat">
+          <dt>Last click</dt>
+          <dd style="font-size: var(--fs-13)">{{ link.last_clicked_at|date:"j M"|default:"—" }}</dd>
+        </div>
+      </dl>
+
+      {% if not link.is_code_released %}
+        <div class="panel">
+          <div class="panel-head"><h2>QR code</h2></div>
+          <div class="panel-body" style="text-align: center">
+            <img class="qr-thumb" style="margin: 0 auto; width: 160px; height: 160px"
+                 src="{% url 'qr-code' code=link.code %}" alt="QR code for {{ link.short_url }}" width="160" height="160">
+            <a class="btn btn-sm" style="width: 100%" href="{% url 'qr-code' code=link.code %}" download="{{ link.code }}.png">
+              <svg class="icon icon-sm" aria-hidden="true"><use href="#i-download"/></svg>Download PNG
+            </a>
+          </div>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<dialog id="confirm-delete">
+  <div class="dialog-body">
+    <h2>Delete this link?</h2>
+    <p>
+      <span class="mono">/{{ link.code }}</span> stops redirecting immediately and its click history is kept.
+      The alias becomes available again, so anyone — including someone else — can claim
+      <span class="mono">/{{ link.code }}</span> and point it wherever they like.
+    </p>
+  </div>
+  <form method="dialog" class="dialog-foot">
+    <button type="submit" class="btn" value="cancel">Cancel</button>
+    <button type="submit" class="btn btn-danger" value="confirm">Delete link</button>
+  </form>
+</dialog>
+{% endblock %}

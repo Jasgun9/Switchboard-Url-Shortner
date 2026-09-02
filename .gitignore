@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+*.sqlite3
+staticfiles/
+
+# Secrets and local config
+.env
+*.mmdb
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Celery
+celerybeat-schedule*

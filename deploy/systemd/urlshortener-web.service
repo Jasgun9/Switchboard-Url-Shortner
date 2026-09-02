@@ -1,0 +1,32 @@
+[Unit]
+Description=URL shortener web application (Gunicorn)
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=notify
+User=urlshortener
+Group=urlshortener
+WorkingDirectory=/srv/urlshortener/backend
+EnvironmentFile=/srv/urlshortener/backend/.env
+Environment=DJANGO_ROOT_URLCONF=config.urls_web
+ExecStart=/srv/urlshortener/backend/.venv/bin/gunicorn config.wsgi_web:application \
+    --bind unix:/run/urlshortener/web.sock \
+    --workers 3 \
+    --timeout 30 \
+    --graceful-timeout 30 \
+    --access-logfile - \
+    --error-logfile -
+ExecReload=/bin/kill -s HUP $MAINPID
+RuntimeDirectory=urlshortener
+Restart=always
+RestartSec=3
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/urlshortener/backend
+
+[Install]
+WantedBy=multi-user.target

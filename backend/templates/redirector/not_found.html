@@ -1,0 +1,12 @@
+{% extends "redirector/base.html" %}
+
+{% block title %}Link not found{% endblock %}
+
+{% block content %}
+<h1>Link not found</h1>
+<p style="margin-bottom: 0">This short link does not exist, has expired, or has been deleted.</p>
+{% endblock %}
+
+{% block footer %}
+<footer><a href="{{ web_domain }}">Create a short link</a></footer>
+{% endblock %}

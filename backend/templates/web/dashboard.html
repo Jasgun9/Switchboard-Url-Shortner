@@ -1,0 +1,150 @@
+{% extends "web/base.html" %}
+
+{% block title %}Links — short.{% endblock %}
+
+{% block content %}
+<div class="stack">
+
+  <div class="page-head" data-animate="head">
+    <div>
+      <h1>Links</h1>
+      <p class="lede">Every short link on your account, with its click count and current state.</p>
+    </div>
+    <div class="page-head-actions">
+      <a class="btn btn-primary" href="{% url 'link-create' %}">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>New link
+      </a>
+    </div>
+  </div>
+
+  {% if total_links %}
+    <dl class="stats" data-animate="stats">
+      <div class="stat"><dt>Links</dt><dd>{{ total_links }}</dd></div>
+      <div class="stat"><dt>Total clicks</dt><dd>{{ total_clicks }}</dd></div>
+      <div class="stat">
+        <dt>Active</dt>
+        <dd>{{ active_links }}<span class="stat-note"> of {{ total_links }}</span></dd>
+      </div>
+    </dl>
+  {% endif %}
+
+  <div data-animate="table">
+    {% if total_links %}
+      <form method="get" class="toolbar" style="margin-bottom: var(--s-4)">
+        <span class="search">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-search"/></svg>
+          <input type="search" name="search" value="{{ search }}" placeholder="Search code, title or destination" aria-label="Search links">
+        </span>
+        <select name="status" aria-label="Filter by status">
+          <option value="">All statuses</option>
+          <option value="active"{% if status == "active" %} selected{% endif %}>Active</option>
+          <option value="expired"{% if status == "expired" %} selected{% endif %}>Expired</option>
+          <option value="disabled"{% if status == "disabled" %} selected{% endif %}>Disabled</option>
+        </select>
+        <select name="ordering" aria-label="Sort order">
+          {% for value, label in ordering_choices.items %}
+            <option value="{{ value }}"{% if ordering == value %} selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="btn">Apply</button>
+        {% if search or status %}<a class="btn btn-quiet" href="{% url 'dashboard' %}">Clear</a>{% endif %}
+      </form>
+    {% endif %}
+
+    <div class="panel">
+      {% if page.object_list %}
+        <div class="table-wrap">
+          <table class="table-stack">
+            <thead>
+              <tr>
+                <th>Short link</th>
+                <th>Destination</th>
+                <th>Status</th>
+                <th class="num">Clicks</th>
+                <th>Created</th>
+                <th><span class="sr-only">Actions</span></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for link in page.object_list %}
+                <tr>
+                  <td class="col-main">
+                    <a class="cell-code" href="{% url 'link-detail' pk=link.pk %}">/{{ link.code }}</a>
+                    {% if link.title %}<span class="cell-sub">{{ link.title }}</span>{% endif %}
+                  </td>
+                  <td data-label="To">
+                    <a class="truncate muted" href="{{ link.destination }}" title="{{ link.destination }}" rel="noreferrer nofollow">{{ link.destination }}</a>
+                  </td>
+                  <td data-label="Status">
+                    {% if not link.is_active %}
+                      <span class="status status-off">Disabled</span>
+                    {% elif link.is_expired %}
+                      <span class="status status-expired">Expired</span>
+                    {% else %}
+                      <span class="status status-active">Active</span>
+                    {% endif %}
+                    {% if link.has_password %}
+                      <span class="chip" title="Password protected">
+                        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-lock"/></svg>
+                      </span>
+                    {% endif %}
+                    {% if link.is_code_released %}
+                      <span class="chip" title="This alias has been released and may now belong to another link">Alias released</span>
+                    {% endif %}
+                  </td>
+                  <td class="num col-side" data-label="Clicks">{{ link.click_count }}</td>
+                  <td data-label="Created" class="meta">{{ link.created_at|date:"j M Y" }}</td>
+                  <td class="shrink">
+                    <div class="row-actions">
+                      <button type="button" class="btn btn-icon copy-btn" data-copy="{{ link.short_url }}" aria-label="Copy {{ link.short_url }}">
+                        <span class="copy-idle"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-copy"/></svg></span>
+                        <span class="copy-done"><svg class="icon icon-sm" aria-hidden="true"><use href="#i-check"/></svg></span>
+                      </button>
+                      <a class="btn btn-icon" href="{% url 'link-analytics' pk=link.pk %}" title="Analytics" aria-label="Analytics for /{{ link.code }}">
+                        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chart"/></svg>
+                      </a>
+                      <a class="btn btn-icon" href="{% url 'link-edit' pk=link.pk %}" title="Edit" aria-label="Edit /{{ link.code }}">
+                        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-edit"/></svg>
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        {% if page.paginator.num_pages > 1 %}
+          <div class="pagination">
+            <span>Page {{ page.number }} of {{ page.paginator.num_pages }} · {{ page.paginator.count }} link{{ page.paginator.count|pluralize }}</span>
+            <span class="row">
+              {% if page.has_previous %}
+                <a class="btn btn-sm" href="?page={{ page.previous_page_number }}{{ query }}">Previous</a>
+              {% endif %}
+              {% if page.has_next %}
+                <a class="btn btn-sm" href="?page={{ page.next_page_number }}{{ query }}">Next</a>
+              {% endif %}
+            </span>
+          </div>
+        {% endif %}
+
+      {% elif search or status %}
+        <div class="empty">
+          <h3>No links match these filters</h3>
+          <p>Try a different search term, or clear the filters to see everything.</p>
+          <a class="btn" href="{% url 'dashboard' %}">Clear filters</a>
+        </div>
+      {% else %}
+        <div class="empty">
+          <h3>No links yet</h3>
+          <p>Create your first short link to start tracking clicks, countries and devices.</p>
+          <a class="btn btn-primary" href="{% url 'link-create' %}">
+            <svg class="icon icon-sm" aria-hidden="true"><use href="#i-plus"/></svg>New link
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

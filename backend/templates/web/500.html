@@ -1,0 +1,21 @@
+{% load static %}<!doctype html>
+{% comment %}
+Deliberately standalone: a 500 can be caused by the database being down, and the
+shared base template reads request.user.
+{% endcomment %}
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Something went wrong</title>
+<link rel="stylesheet" href="{% static 'app.css' %}">
+</head>
+<body>
+<main id="main">
+  <div class="container" style="padding-top: 12vh; max-width: 420px;">
+    <h1>Something went wrong</h1>
+    <p class="muted">The page could not be rendered. The error has been logged; please try again shortly.</p>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,27 @@
+{% if field.field.widget.input_type == "checkbox" %}
+  <div class="field checkbox">
+    {{ field }}
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+  </div>
+{% else %}
+  <div class="field{% if field.errors %} invalid{% endif %}">
+    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% if reveal %}
+      <span class="input-affix">
+        {{ field }}
+        <button type="button" class="btn-icon" data-reveal="{{ field.id_for_label }}" aria-label="Show password">
+          <svg class="icon icon-sm" aria-hidden="true"><use href="#i-eye"/></svg>
+        </button>
+      </span>
+    {% else %}
+      {{ field }}
+    {% endif %}
+    {% if hint %}<span class="hint">{{ hint }}</span>{% endif %}
+    {% for error in field.errors %}
+      <span class="field-error">
+        <svg class="icon icon-sm" aria-hidden="true"><use href="#i-alert"/></svg>
+        <span>{{ error }}</span>
+      </span>
+    {% endfor %}
+  </div>
+{% endif %}

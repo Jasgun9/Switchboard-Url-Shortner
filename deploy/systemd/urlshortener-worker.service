@@ -1,0 +1,28 @@
+[Unit]
+Description=URL shortener Celery worker
+After=network.target postgresql.service redis-server.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=simple
+User=urlshortener
+Group=urlshortener
+WorkingDirectory=/srv/urlshortener/backend
+EnvironmentFile=/srv/urlshortener/backend/.env
+ExecStart=/srv/urlshortener/backend/.venv/bin/celery -A config worker \
+    --loglevel=INFO \
+    --concurrency=2 \
+    --max-tasks-per-child=500
+Restart=always
+RestartSec=5
+KillSignal=SIGTERM
+TimeoutStopSec=60
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/urlshortener/backend
+
+[Install]
+WantedBy=multi-user.target

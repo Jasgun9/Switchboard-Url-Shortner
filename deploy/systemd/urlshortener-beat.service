@@ -1,0 +1,27 @@
+[Unit]
+Description=URL shortener Celery beat scheduler
+After=network.target redis-server.service
+Wants=redis-server.service
+
+[Service]
+Type=simple
+User=urlshortener
+Group=urlshortener
+WorkingDirectory=/srv/urlshortener/backend
+EnvironmentFile=/srv/urlshortener/backend/.env
+# Only ever run one beat process, otherwise the nightly jobs fire twice.
+ExecStart=/srv/urlshortener/backend/.venv/bin/celery -A config beat \
+    --loglevel=INFO \
+    --schedule=/var/lib/urlshortener/celerybeat-schedule
+Restart=always
+RestartSec=5
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+StateDirectory=urlshortener
+ReadWritePaths=/srv/urlshortener/backend /var/lib/urlshortener
+
+[Install]
+WantedBy=multi-user.target

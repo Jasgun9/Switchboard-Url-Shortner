@@ -1,0 +1,14 @@
+{% extends "web/base.html" %}
+
+{% block title %}Page not found — short.{% endblock %}
+
+{% block content %}
+<div class="auth" data-animate="error">
+  <p class="eyebrow">404</p>
+  <h1 style="margin-top: var(--s-2)">Page not found</h1>
+  <p class="lede">That page does not exist. If you followed a short link, it may have expired or been deleted.</p>
+  <a class="btn" href="{% url 'home' %}">
+    <svg class="icon icon-sm" aria-hidden="true"><use href="#i-chevron-left"/></svg>Back to the shortener
+  </a>
+</div>
+{% endblock %}
