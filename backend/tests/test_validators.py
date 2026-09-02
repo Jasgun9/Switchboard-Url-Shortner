@@ -71,5 +71,5 @@ class ShortCodeTests(SimpleTestCase):
         self.assertTrue(set("01lIO").isdisjoint(code))
 
     def test_codes_are_not_sequential(self):
-        codes = {generate_code() for _ in range(200)}
+        codes = {generate_code(7) for _ in range(200)}
         self.assertEqual(len(codes), 200)

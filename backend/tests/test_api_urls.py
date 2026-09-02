@@ -1,6 +1,7 @@
 from datetime import timedelta
 from unittest import mock
 
+from django.conf import settings
 from django.db import connection
 from django.test import override_settings
 from django.test.utils import CaptureQueriesContext
@@ -23,7 +24,7 @@ class URLCreationTests(AppTestCase):
 
         self.assertEqual(response.status_code, 201)
         body = response.json()
-        self.assertEqual(len(body["code"]), 7)
+        self.assertEqual(len(body["code"]), settings.SHORT_CODE_MIN_LENGTH)
         self.assertTrue(body["short_url"].endswith(body["code"]))
         self.assertEqual(ShortURL.objects.get(code=body["code"]).owner, self.user)
 
@@ -131,7 +132,7 @@ class URLCreationTests(AppTestCase):
         self.assertNotIn("password_hash", response.json())
 
     def test_code_generation_failure_is_reported_cleanly(self):
-        with mock.patch("shortener.models.generate_code", return_value="abcdefg"):
+        with mock.patch("shortener.shortcodes.generate_code", return_value="abcdefg"):
             ShortURL.objects.create(code="abcdefg", destination="https://example.com/")
             response = self.client.post(
                 "/api/v1/urls/", {"destination": "https://example.com/x"}, content_type="application/json"

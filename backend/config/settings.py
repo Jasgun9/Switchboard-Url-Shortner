@@ -204,8 +204,15 @@ WEB_DOMAIN = env("WEB_DOMAIN", default="http://localhost:8000")
 # Shortening a link to 127.0.0.1 only makes sense while developing.
 BLOCK_PRIVATE_DESTINATIONS = env.bool("BLOCK_PRIVATE_DESTINATIONS", default=not DEBUG)
 
-SHORT_CODE_LENGTH = env.int("SHORT_CODE_LENGTH", default=7)
-SHORT_CODE_MAX_ATTEMPTS = 6
+# Codes start as short as possible and grow a character at a time once a length
+# fills up. Two characters is 3,249 codes, which is also small enough that
+# anyone can walk the whole space in a few minutes -- raise the minimum if links
+# being discoverable matters more than them being tiny.
+SHORT_CODE_MIN_LENGTH = env.int("SHORT_CODE_MIN_LENGTH", default=2)
+SHORT_CODE_MAX_LENGTH = env.int("SHORT_CODE_MAX_LENGTH", default=8)
+# Failed inserts are the signal that a length is crowded. Few enough that
+# stepping up is cheap, enough that a length is genuinely used up first.
+SHORT_CODE_ATTEMPTS_PER_LENGTH = 5
 ALIAS_MIN_LENGTH = 3
 ALIAS_MAX_LENGTH = 32
 

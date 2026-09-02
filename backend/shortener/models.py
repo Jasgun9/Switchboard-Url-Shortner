@@ -6,8 +6,7 @@ from django.contrib.auth.hashers import check_password, make_password
 from django.db import IntegrityError, models, transaction
 from django.utils import timezone
 
-from shortener import cache
-from shortener.shortcodes import generate_code
+from shortener import cache, shortcodes
 
 API_KEY_PREFIX_LENGTH = 8
 API_KEY_SECRET_BYTES = 32
@@ -134,22 +133,29 @@ class ShortURL(models.Model):
 
 
 def save_with_random_code(url):
-    """Insert an unsaved ShortURL, retrying until a code sticks.
+    """Insert an unsaved ShortURL, starting from the shortest codes available.
 
     Two requests can generate the same code and both pass an existence check,
-    so the constraint is what actually picks the winner.
+    so the constraint is what actually picks the winner. When a length is
+    crowded enough that the retries keep losing, move up a character.
     """
-    for _ in range(settings.SHORT_CODE_MAX_ATTEMPTS):
-        url.code = generate_code()
-        try:
-            # Savepoint per attempt. On Postgres a failed INSERT poisons the whole
-            # surrounding transaction otherwise.
-            with transaction.atomic():
-                url.save(force_insert=True)
-        except IntegrityError:
-            url.pk = None
-            continue
-        return url
+    start = shortcodes.length_floor()
+
+    for length in range(start, settings.SHORT_CODE_MAX_LENGTH + 1):
+        for _ in range(settings.SHORT_CODE_ATTEMPTS_PER_LENGTH):
+            url.code = shortcodes.generate_code(length)
+            try:
+                # Savepoint per attempt. On Postgres a failed INSERT poisons the whole
+                # surrounding transaction otherwise.
+                with transaction.atomic():
+                    url.save(force_insert=True)
+            except IntegrityError:
+                url.pk = None
+                continue
+            if length > start:
+                shortcodes.remember_length_floor(length)
+            return url
+
     raise CodeGenerationError("Could not allocate a unique short code.")
 
 

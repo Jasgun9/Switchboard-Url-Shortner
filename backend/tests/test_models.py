@@ -1,10 +1,11 @@
 from datetime import timedelta
 from unittest import mock
 
+from django.conf import settings
 from django.db import IntegrityError
 from django.utils import timezone
 
-from shortener import resolver
+from shortener import resolver, shortcodes
 from shortener.models import (
     AliasTaken,
     ClickEvent,
@@ -16,12 +17,60 @@ from shortener.models import (
 from tests.base import AppTestCase
 
 
+class CodeLengthTests(AppTestCase):
+    """Codes start short and grow only when a length genuinely fills up."""
+
+    def test_new_links_get_the_shortest_code(self):
+        url = create_short_url(destination="https://example.com/")
+        self.assertEqual(len(url.code), settings.SHORT_CODE_MIN_LENGTH)
+
+    def test_moves_up_a_character_once_a_length_is_crowded(self):
+        taken = create_short_url(destination="https://example.com/first").code
+        self.assertEqual(len(taken), 2)
+
+        # Every two-character attempt collides; the three-character one is free.
+        attempts = [taken] * settings.SHORT_CODE_ATTEMPTS_PER_LENGTH + ["abc"]
+        with mock.patch("shortener.shortcodes.generate_code", side_effect=attempts):
+            url = create_short_url(destination="https://example.com/second")
+
+        self.assertEqual(url.code, "abc")
+
+    def test_lengths_are_tried_in_order(self):
+        with mock.patch("shortener.shortcodes.generate_code", side_effect=lambda n: "x" * n) as gen:
+            create_short_url(destination="https://example.com/")
+
+        self.assertEqual(gen.call_args_list[0].args[0], settings.SHORT_CODE_MIN_LENGTH)
+
+    def test_a_freed_short_code_can_be_handed_out_again(self):
+        first = create_short_url(destination="https://example.com/old", alias="zz9")
+        first.soft_delete()
+
+        with mock.patch("shortener.shortcodes.generate_code", return_value="zz9"):
+            second = create_short_url(destination="https://example.com/new")
+
+        self.assertEqual(second.code, "zz9")
+        self.assertNotEqual(first.pk, second.pk)
+
+    def test_crowded_length_is_remembered_so_it_is_not_rediscovered(self):
+        taken = create_short_url(destination="https://example.com/first").code
+        attempts = [taken] * settings.SHORT_CODE_ATTEMPTS_PER_LENGTH + ["abc"]
+        with mock.patch("shortener.shortcodes.generate_code", side_effect=attempts):
+            create_short_url(destination="https://example.com/second")
+
+        self.assertEqual(shortcodes.length_floor(), 3)
+
+        # The next link should start at 3 rather than retrying 2 all over again.
+        with mock.patch("shortener.shortcodes.generate_code", side_effect=lambda n: "y" * n) as gen:
+            create_short_url(destination="https://example.com/third")
+        self.assertEqual(gen.call_args_list[0].args[0], 3)
+
+
 class SaveWithRandomCodeTests(AppTestCase):
     def test_retries_when_a_generated_code_already_exists(self):
         ShortURL.objects.create(code="taken12", destination="https://example.com/first")
 
         with mock.patch(
-            "shortener.models.generate_code", side_effect=["taken12", "taken12", "free123"]
+            "shortener.shortcodes.generate_code", side_effect=["taken12", "taken12", "free123"]
         ) as generator:
             url = save_with_random_code(ShortURL(destination="https://example.com/second"))
 
@@ -32,7 +81,7 @@ class SaveWithRandomCodeTests(AppTestCase):
     def test_gives_up_after_the_configured_attempts(self):
         ShortURL.objects.create(code="taken12", destination="https://example.com/first")
 
-        with mock.patch("shortener.models.generate_code", return_value="taken12"):
+        with mock.patch("shortener.shortcodes.generate_code", return_value="taken12"):
             with self.assertRaises(CodeGenerationError):
                 save_with_random_code(ShortURL(destination="https://example.com/second"))
 
