@@ -1,16 +1,16 @@
 [Unit]
-Description=URL shortener web application (Gunicorn)
+Description=Switchboard web application (Gunicorn)
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 
 [Service]
 Type=notify
-User=switchboard
-Group=switchboard
-WorkingDirectory=/srv/switchboard/backend
-EnvironmentFile=/srv/switchboard/backend/.env
+User=jasgun
+Group=jasgun
+WorkingDirectory=/var/www/switchboard/backend
+EnvironmentFile=/var/www/switchboard/backend/.env
 Environment=DJANGO_ROOT_URLCONF=config.urls_web
-ExecStart=/srv/switchboard/backend/.venv/bin/gunicorn config.wsgi_web:application \
+ExecStart=/var/www/switchboard/backend/.venv/bin/gunicorn config.wsgi_web:application \
     --bind unix:/run/switchboard/web.sock \
     --workers 3 \
     --timeout 30 \
@@ -19,6 +19,9 @@ ExecStart=/srv/switchboard/backend/.venv/bin/gunicorn config.wsgi_web:applicatio
     --error-logfile -
 ExecReload=/bin/kill -s HUP $MAINPID
 RuntimeDirectory=switchboard
+# Both gunicorn units keep their socket in /run/switchboard. Without this,
+# stopping either one deletes the directory out from under the other.
+RuntimeDirectoryPreserve=yes
 Restart=always
 RestartSec=3
 
@@ -26,7 +29,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/switchboard/backend
+ReadWritePaths=/var/www/switchboard/backend
 
 [Install]
 WantedBy=multi-user.target

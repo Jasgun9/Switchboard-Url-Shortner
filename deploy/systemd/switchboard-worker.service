@@ -1,15 +1,15 @@
 [Unit]
-Description=URL shortener Celery worker
+Description=Switchboard Celery worker
 After=network.target postgresql.service redis-server.service
 Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=switchboard
-Group=switchboard
-WorkingDirectory=/srv/switchboard/backend
-EnvironmentFile=/srv/switchboard/backend/.env
-ExecStart=/srv/switchboard/backend/.venv/bin/celery -A config worker \
+User=jasgun
+Group=jasgun
+WorkingDirectory=/var/www/switchboard/backend
+EnvironmentFile=/var/www/switchboard/backend/.env
+ExecStart=/var/www/switchboard/backend/.venv/bin/celery -A config worker \
     --loglevel=INFO \
     --concurrency=2 \
     --max-tasks-per-child=500
@@ -22,7 +22,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/switchboard/backend
+ReadWritePaths=/var/www/switchboard/backend
 
 [Install]
 WantedBy=multi-user.target

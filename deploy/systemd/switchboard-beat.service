@@ -1,16 +1,16 @@
 [Unit]
-Description=URL shortener Celery beat scheduler
+Description=Switchboard Celery beat scheduler
 After=network.target redis-server.service
 Wants=redis-server.service
 
 [Service]
 Type=simple
-User=switchboard
-Group=switchboard
-WorkingDirectory=/srv/switchboard/backend
-EnvironmentFile=/srv/switchboard/backend/.env
+User=jasgun
+Group=jasgun
+WorkingDirectory=/var/www/switchboard/backend
+EnvironmentFile=/var/www/switchboard/backend/.env
 # Only ever run one beat process, otherwise the nightly jobs fire twice.
-ExecStart=/srv/switchboard/backend/.venv/bin/celery -A config beat \
+ExecStart=/var/www/switchboard/backend/.venv/bin/celery -A config beat \
     --loglevel=INFO \
     --schedule=/var/lib/switchboard/celerybeat-schedule
 Restart=always
@@ -21,7 +21,7 @@ PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
 StateDirectory=switchboard
-ReadWritePaths=/srv/switchboard/backend /var/lib/switchboard
+ReadWritePaths=/var/www/switchboard/backend /var/lib/switchboard
 
 [Install]
 WantedBy=multi-user.target

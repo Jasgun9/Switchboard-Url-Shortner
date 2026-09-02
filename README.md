@@ -8,12 +8,25 @@ build step and no client-side framework.
 The name is the shape of the thing: a switchboard takes an incoming connection,
 routes it to a destination, and logs the call.
 
+![The home page: a headline, one input, and advanced options behind a disclosure](docs/home.png)
+
 Two separately deployed applications share one database and one Redis:
 
 | Application | Host | Responsibility |
 |---|---|---|
 | Web app | `switchboard.jasgun.me` | UI, authentication, dashboard, link management, API, API keys, analytics, QR codes |
 | Redirect service | `sb.jasgun.me` | Resolving short codes, redirecting, expiry, password gate, caching, rate limiting, click dispatch |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/dashboard.png" alt="Dashboard listing every link with click counts, status and filters"></td>
+<td width="50%"><img src="docs/analytics.png" alt="Analytics for one link: clicks per day, countries, devices, browsers and referrers"></td>
+</tr>
+<tr>
+<td><em>Every link on the account, with search, status filters and sorting.</em></td>
+<td><em>Per-link analytics. Charts are single-series, so colour never carries meaning.</em></td>
+</tr>
+</table>
 
 ## Contents
 
@@ -453,7 +466,7 @@ commands to run. Then:
    ```powershell
    New-NetFirewallRule -DisplayName "Switchboard dev servers (LAN only)" `
      -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000,8001 `
-     -Program "D:\url\backend\.venv\Scripts\python.exe" `
+     -Program "<path to this repo>\backend\.venv\Scripts\python.exe" `
      -RemoteAddress LocalSubnet -Profile Private,Public
    ```
 
@@ -514,6 +527,11 @@ retention jobs, and health checks.
 
 ## Production setup
 
+New to servers? **[deploy/DEPLOY.md](deploy/DEPLOY.md)** walks through a blank
+VPS step by step, explains what each piece does, and says what you should see
+after every command. The summary below assumes you already know your way
+around Linux.
+
 PostgreSQL, Redis, nginx and Python run directly on the VPS. No containers.
 
 ```bash
@@ -521,21 +539,24 @@ sudo apt install python3-venv postgresql redis-server nginx
 sudo -u postgres createuser switchboard --pwprompt
 sudo -u postgres createdb switchboard -O switchboard
 
-sudo adduser --system --group --home /srv/switchboard switchboard
-sudo -u switchboard git clone <repo> /srv/switchboard
-cd /srv/switchboard/backend
-sudo -u switchboard python3 -m venv .venv
-sudo -u switchboard .venv/bin/pip install -r requirements.txt
-sudo -u switchboard cp .env.example .env   # fill it in, chmod 600
-sudo -u switchboard .venv/bin/python manage.py migrate
-sudo -u switchboard .venv/bin/python manage.py collectstatic --noinput
+# Runs as an existing login account rather than a dedicated service user.
+sudo mkdir -p /var/www/switchboard
+sudo chown jasgun:jasgun /var/www/switchboard
 
-sudo cp /srv/switchboard/deploy/systemd/*.service /etc/systemd/system/
+git clone <repo> /var/www/switchboard
+cd /var/www/switchboard/backend
+python3 -m venv .venv
+.venv/bin/pip install -r requirements.txt
+cp .env.example .env   # fill it in, chmod 600
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py collectstatic --noinput
+
+sudo cp /var/www/switchboard/deploy/systemd/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
 sudo systemctl enable --now switchboard-web switchboard-redirect \
                             switchboard-worker switchboard-beat
 
-sudo cp /srv/switchboard/deploy/nginx/*.conf /etc/nginx/sites-available/
+sudo cp /var/www/switchboard/deploy/nginx/*.conf /etc/nginx/sites-available/
 sudo ln -s /etc/nginx/sites-available/switchboard.jasgun.me.conf /etc/nginx/sites-enabled/
 sudo ln -s /etc/nginx/sites-available/sb.jasgun.me.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
@@ -562,10 +583,10 @@ file on the next worker restart.
 ### Deploying an update
 
 ```bash
-cd /srv/switchboard && sudo -u switchboard git pull
-cd backend && sudo -u switchboard .venv/bin/pip install -r requirements.txt
-sudo -u switchboard .venv/bin/python manage.py migrate
-sudo -u switchboard .venv/bin/python manage.py collectstatic --noinput
+cd /var/www/switchboard && git pull
+cd backend && .venv/bin/pip install -r requirements.txt
+.venv/bin/python manage.py migrate
+.venv/bin/python manage.py collectstatic --noinput
 sudo systemctl reload switchboard-web switchboard-redirect
 sudo systemctl restart switchboard-worker switchboard-beat
 ```
