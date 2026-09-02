@@ -54,9 +54,8 @@ def _redirect_to(request, code, payload, ip):
         )
 
     response = HttpResponseRedirect(payload["destination"])
-    # Redirects must never be cached by Cloudflare or the browser: a cached hop
-    # would keep working after the link expires or is deleted, and would hide
-    # the click from analytics.
+    # Never let a redirect be cached. A cached hop keeps working after the link
+    # expires or is deleted, and analytics never sees the click.
     response["Cache-Control"] = "private, no-store, max-age=0"
     return response
 
@@ -69,8 +68,7 @@ def _password_gate(request, code, payload, ip):
         if not verdict.allowed:
             return _rate_limited(request, verdict)
 
-        # The hash is deliberately not cached, so this is the one path that
-        # reads the row from the database.
+        # The password hash isn't cached, so this is the one path that hits the database.
         url = ShortURL.objects.alive().filter(pk=payload["id"]).first()
         if url is None:
             return not_found(request)

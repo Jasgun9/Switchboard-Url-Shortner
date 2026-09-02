@@ -3,9 +3,26 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Short links with click analytics, QR codes and a REST API.">
-<meta name="color-scheme" content="light dark">
-<title>{% block title %}short.{% endblock %}</title>
+<meta name="color-scheme" content="light">
+<title>{% block title %}Switchboard{% endblock %}</title>
+<meta name="description" content="{% block description %}Shorten links and see what happens next: clicks by country, device, browser and referrer, plus QR codes, expiry, password protection and a REST API.{% endblock %}">
+<link rel="canonical" href="{{ canonical_url }}">
+
+{% comment %}
+Default to noindex and let the two public pages opt in. Getting it the other way
+round means one forgotten override puts someone's dashboard in Google.
+{% endcomment %}
+<meta name="robots" content="{% block robots %}noindex, nofollow{% endblock %}">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Switchboard">
+<meta property="og:title" content="{% block og_title %}Switchboard{% endblock %}">
+<meta property="og:description" content="{% block og_description %}Shorten links and see what happens next: clicks by country, device, browser and referrer, plus QR codes, expiry and a REST API.{% endblock %}">
+<meta property="og:url" content="{{ canonical_url }}">
+<meta property="og:image" content="{{ web_domain }}{% static 'og.png' %}">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 
 {% comment %}
 A long bar over a short one: the thing the product does, legible at 16px.
@@ -40,7 +57,14 @@ arrives, the page still shows itself.
 
 <header class="masthead">
   <div class="shell masthead-inner">
-    <a class="brand" href="{% url 'home' %}">short<span class="brand-dot">.</span></a>
+    <a class="brand" href="{% url 'home' %}">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="currentColor"/>
+        <rect x="7" y="11" width="18" height="3.5" rx="1.75" fill="#fff"/>
+        <rect x="7" y="18" width="9" height="3.5" rx="1.75" fill="#fff" opacity=".7"/>
+      </svg>
+      Switchboard
+    </a>
 
     <nav class="nav" aria-label="Main">
       {% if user.is_authenticated %}
@@ -117,7 +141,14 @@ overrides `main` so it can run full-bleed alternating sections.
 
 <footer class="footer">
   <div class="shell footer-inner">
-    <span class="brand">short<span class="brand-dot">.</span></span>
+    <span class="brand">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true">
+        <rect width="32" height="32" rx="9" fill="currentColor"/>
+        <rect x="7" y="11" width="18" height="3.5" rx="1.75" fill="#fff"/>
+        <rect x="7" y="18" width="9" height="3.5" rx="1.75" fill="#fff" opacity=".7"/>
+      </svg>
+      Switchboard
+    </span>
     <nav aria-label="Footer">
       <a href="{% url 'api-docs' %}">API reference</a>
       <a href="{% url 'home' %}">Shorten a URL</a>

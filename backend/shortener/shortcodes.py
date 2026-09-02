@@ -4,8 +4,7 @@ from django.conf import settings
 
 from shortener.validators import RESERVED_ALIASES
 
-# Visually unambiguous alphabet: no 0/O, no 1/l/I. People read these codes out
-# loud and copy them by hand.
+# No 0/O and no 1/l/I. People read these out loud and retype them by hand.
 ALPHABET = "23456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
 
 

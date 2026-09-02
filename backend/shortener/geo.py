@@ -63,7 +63,7 @@ def lookup(ip):
 
 
 def reset():
-    """Drop the cached reader; used by tests and after a database swap."""
+    # Drop the cached reader; used by tests and after a database swap.
     global _reader, _unavailable
     with _lock:
         if _reader is not None:

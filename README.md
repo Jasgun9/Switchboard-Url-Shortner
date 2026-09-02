@@ -1,16 +1,19 @@
-# URL shortener
+# Switchboard
 
-A URL shortener with click analytics, QR codes, expiring and password-protected
+A link shortener with click analytics, QR codes, expiring and password-protected
 links, and a REST API. Django with server-rendered templates for the UI, Django
 REST Framework for the API, PostgreSQL and Redis on a plain Linux VPS. No Node
 build step and no client-side framework.
+
+The name is the shape of the thing: a switchboard takes an incoming connection,
+routes it to a destination, and logs the call.
 
 Two separately deployed applications share one database and one Redis:
 
 | Application | Host | Responsibility |
 |---|---|---|
-| Web app | `urlshortner.jasgun.me` | UI, authentication, dashboard, link management, API, API keys, analytics, QR codes |
-| Redirect service | `xyz.jasgun.me` | Resolving short codes, redirecting, expiry, password gate, caching, rate limiting, click dispatch |
+| Web app | `switchboard.jasgun.me` | UI, authentication, dashboard, link management, API, API keys, analytics, QR codes |
+| Redirect service | `sb.jasgun.me` | Resolving short codes, redirecting, expiry, password gate, caching, rate limiting, click dispatch |
 
 ## Contents
 
@@ -34,8 +37,8 @@ Two separately deployed applications share one database and one Redis:
 
 ```
 Cloudflare
-  ├── urlshortner.jasgun.me ──► nginx ──► gunicorn (config.wsgi_web)      ─┐
-  └── xyz.jasgun.me         ──► nginx ──► gunicorn (config.wsgi_redirect) ─┤
+  ├── switchboard.jasgun.me ──► nginx ──► gunicorn (config.wsgi_web)      ─┐
+  └── sb.jasgun.me         ──► nginx ──► gunicorn (config.wsgi_redirect) ─┤
                                                                            ├─► PostgreSQL
                                           celery worker  ──────────────────┤
                                           celery beat    ──────────────────┘
@@ -103,12 +106,69 @@ the page still shows itself if the script never arrives.
 Icons are one inline SVG sprite in `templates/web/_icons.html` — no icon font,
 no dependency.
 
+### Crawlers
+
+Only two pages are meant to be indexed: the home page and the API reference.
+The base template sets `noindex, nofollow` by default and those two opt back in,
+so a page added later is private until someone deliberately opens it up rather
+than the other way round.
+
+`robots.txt` disallows `/admin/`, `/api/`, and the signed-in pages, and points
+at `/sitemap.xml`. The sitemap, the canonical tag and `og:image` are all built
+from `WEB_DOMAIN` rather than the request's `Host` header, so a crawler that
+reaches the origin by IP still gets canonical URLs back and a poisoned Host
+can't rewrite them.
+
+Each page carries its own title, description and Open Graph tags. The social
+card at `static/og.png` is rendered from `scratchpad/og.html` in headless
+Chrome, which is how it gets the real brand fonts; re-render it if the wording
+changes.
+
 The HTML pages and the API are two front doors onto the same models. The pages
 use the ORM directly through Django forms rather than calling the API over HTTP
 — going out to your own API from your own view process would add a network hop
 and a second authentication path for nothing. The shared part is the domain
 logic in `shortener/`: `create_short_url()`, the validators and
 `analytics.summary()` are called by both.
+
+## Database
+
+SQLite locally, **PostgreSQL** in production. `DATABASE_URL` is the whole
+switch — no application code branches on the backend, and the only raw SQL in
+the project is the `SELECT 1` in the readiness probe.
+
+```bash
+DATABASE_URL=postgres://switchboard:password@127.0.0.1:5432/switchboard
+```
+
+**MySQL is not supported, and the reason is specific.** Short codes are kept
+unique by a partial constraint:
+
+```sql
+UNIQUE (code) WHERE code_released_at IS NULL
+```
+
+MySQL cannot create partial indexes (`supports_partial_indexes = False` in
+Django's MySQL backend). Django only emits a *warning* for this and then skips
+the constraint, so `migrate` succeeds and you end up with **no uniqueness on
+short codes at all** — two live links can claim the same alias and the
+`IntegrityError` that decides contested claims never fires. That failure is
+silent, which is exactly why `shortener/checks.py` turns it into a startup
+error (`shortener.E002`) rather than letting it through.
+
+If MySQL is a hard requirement, the portable fix is to drop the condition and
+add a nullable `active_code` column holding the code while the link is live and
+`NULL` once released, with a plain unique index on it. Every backend treats
+NULLs as distinct in a unique index, so that gives the same guarantee. It is a
+schema change plus a migration, not a settings change.
+
+A second check (`shortener.E001`, deploy-only) fails `manage.py check --deploy`
+if SQLite is still configured, since one writer on one box cannot back two
+Gunicorn services and a Celery worker.
+
+Connections are reused for `DB_CONN_MAX_AGE` seconds with `CONN_HEALTH_CHECKS`
+on, so a connection that died while the database restarted is replaced instead
+of raising.
 
 ## Database design
 
@@ -391,13 +451,13 @@ commands to run. Then:
    PowerShell, scoped to your own subnet so it is not exposed more widely:
 
    ```powershell
-   New-NetFirewallRule -DisplayName "short. dev servers (LAN only)" `
+   New-NetFirewallRule -DisplayName "Switchboard dev servers (LAN only)" `
      -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000,8001 `
      -Program "D:\url\backend\.venv\Scripts\python.exe" `
      -RemoteAddress LocalSubnet -Profile Private,Public
    ```
 
-   To remove it later: `Remove-NetFirewallRule -DisplayName "short. dev servers (LAN only)"`.
+   To remove it later: `Remove-NetFirewallRule -DisplayName "Switchboard dev servers (LAN only)"`.
 
 `ALLOWED_HOSTS` needs no change — with `DJANGO_DEBUG=1` it already accepts any
 host. Your address will change when the router reassigns it, so re-run `lanurl`
@@ -458,26 +518,26 @@ PostgreSQL, Redis, nginx and Python run directly on the VPS. No containers.
 
 ```bash
 sudo apt install python3-venv postgresql redis-server nginx
-sudo -u postgres createuser urlshortener --pwprompt
-sudo -u postgres createdb urlshortener -O urlshortener
+sudo -u postgres createuser switchboard --pwprompt
+sudo -u postgres createdb switchboard -O switchboard
 
-sudo adduser --system --group --home /srv/urlshortener urlshortener
-sudo -u urlshortener git clone <repo> /srv/urlshortener
-cd /srv/urlshortener/backend
-sudo -u urlshortener python3 -m venv .venv
-sudo -u urlshortener .venv/bin/pip install -r requirements.txt
-sudo -u urlshortener cp .env.example .env   # fill it in, chmod 600
-sudo -u urlshortener .venv/bin/python manage.py migrate
-sudo -u urlshortener .venv/bin/python manage.py collectstatic --noinput
+sudo adduser --system --group --home /srv/switchboard switchboard
+sudo -u switchboard git clone <repo> /srv/switchboard
+cd /srv/switchboard/backend
+sudo -u switchboard python3 -m venv .venv
+sudo -u switchboard .venv/bin/pip install -r requirements.txt
+sudo -u switchboard cp .env.example .env   # fill it in, chmod 600
+sudo -u switchboard .venv/bin/python manage.py migrate
+sudo -u switchboard .venv/bin/python manage.py collectstatic --noinput
 
-sudo cp /srv/urlshortener/deploy/systemd/*.service /etc/systemd/system/
+sudo cp /srv/switchboard/deploy/systemd/*.service /etc/systemd/system/
 sudo systemctl daemon-reload
-sudo systemctl enable --now urlshortener-web urlshortener-redirect \
-                            urlshortener-worker urlshortener-beat
+sudo systemctl enable --now switchboard-web switchboard-redirect \
+                            switchboard-worker switchboard-beat
 
-sudo cp /srv/urlshortener/deploy/nginx/*.conf /etc/nginx/sites-available/
-sudo ln -s /etc/nginx/sites-available/urlshortner.jasgun.me.conf /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/xyz.jasgun.me.conf /etc/nginx/sites-enabled/
+sudo cp /srv/switchboard/deploy/nginx/*.conf /etc/nginx/sites-available/
+sudo ln -s /etc/nginx/sites-available/switchboard.jasgun.me.conf /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/sb.jasgun.me.conf /etc/nginx/sites-enabled/
 sudo nginx -t && sudo systemctl reload nginx
 ```
 
@@ -490,11 +550,11 @@ file on the next worker restart.
 
 - Both hostnames proxied (orange cloud), SSL mode **Full (strict)** with an
   origin certificate installed on the VPS.
-- **Do not cache `xyz.jasgun.me`.** Redirect responses already send
+- **Do not cache `sb.jasgun.me`.** Redirect responses already send
   `Cache-Control: private, no-store`, but add a cache rule that bypasses the
   cache for that hostname anyway — a cached 302 would keep an expired or deleted
   link alive and would hide clicks from analytics.
-- Leave caching on for `urlshortner.jasgun.me/static/*` and nothing else on that
+- Leave caching on for `switchboard.jasgun.me/static/*` and nothing else on that
   host — the pages are per-user.
 - `CLIENT_IP_HEADER=HTTP_CF_CONNECTING_IP`, and restrict the origin firewall to
   Cloudflare's IP ranges so the header cannot be forged by connecting directly.
@@ -502,12 +562,12 @@ file on the next worker restart.
 ### Deploying an update
 
 ```bash
-cd /srv/urlshortener && sudo -u urlshortener git pull
-cd backend && sudo -u urlshortener .venv/bin/pip install -r requirements.txt
-sudo -u urlshortener .venv/bin/python manage.py migrate
-sudo -u urlshortener .venv/bin/python manage.py collectstatic --noinput
-sudo systemctl reload urlshortener-web urlshortener-redirect
-sudo systemctl restart urlshortener-worker urlshortener-beat
+cd /srv/switchboard && sudo -u switchboard git pull
+cd backend && sudo -u switchboard .venv/bin/pip install -r requirements.txt
+sudo -u switchboard .venv/bin/python manage.py migrate
+sudo -u switchboard .venv/bin/python manage.py collectstatic --noinput
+sudo systemctl reload switchboard-web switchboard-redirect
+sudo systemctl restart switchboard-worker switchboard-beat
 ```
 
 `/health/live` says the process is up; `/health/ready` checks PostgreSQL and

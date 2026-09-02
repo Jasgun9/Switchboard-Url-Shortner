@@ -1,5 +1,5 @@
 /* ==========================================================================
-   short. — design system
+   Switchboard — design system
    Soft blue-gray canvas, white cards, one corporate blue accent.
    Light theme only: the palette below is the whole visual language.
    ========================================================================== */
@@ -209,13 +209,25 @@ hr, .rule { border: 0; border-top: 1px solid var(--border); margin: 0; }
 }
 
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
   font-size: var(--fs-20);
   font-weight: 800;
-  letter-spacing: -0.04em;
+  letter-spacing: -0.03em;
   color: var(--text);
 }
 .brand:hover { color: var(--text); }
-.brand-dot { color: var(--accent); }
+
+/* The mark takes its fill from currentColor, so the accent is set here rather
+   than baked into the SVG and it recolours with the brand. */
+.brand-mark {
+  width: 26px;
+  height: 26px;
+  flex: none;
+  color: var(--accent);
+  border-radius: 8px;
+}
 
 .nav { display: flex; align-items: center; gap: var(--s-2); flex: 1; }
 
@@ -303,7 +315,8 @@ main { flex: 1; }
   min-height: 96px;
   flex-wrap: wrap;
 }
-.footer .brand { font-size: var(--fs-18); }
+.footer .brand { font-size: var(--fs-18); color: var(--text-2); }
+.footer .brand-mark { width: 22px; height: 22px; }
 .footer nav { display: flex; gap: var(--s-8); }
 .footer nav a { font-size: var(--fs-14); font-weight: 500; color: var(--text-2); }
 .footer nav a:hover { color: var(--accent); }

@@ -1,11 +1,12 @@
 import logging
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Count, Q, Sum
-from django.http import HttpResponseRedirect
+from django.http import HttpResponse, HttpResponseRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
@@ -149,7 +150,7 @@ def dashboard(request):
 
     page = Paginator(links.order_by(ordering, "-id"), PAGE_SIZE).get_page(request.GET.get("page"))
 
-    # Totals cover the whole account, not the filtered page.
+    # Totals are for the whole account, not the filtered page.
     everything = owned_links(request.user)
     totals = everything.aggregate(links=Count("id"), clicks=Sum("click_count"))
 
@@ -281,7 +282,7 @@ def link_analytics(request, pk):
 
 
 def _with_share(rows):
-    """Bar widths as percentages of the top row; templates cannot do arithmetic."""
+    # Bar widths as percentages of the top row; templates cannot do arithmetic.
     peak = max((row["clicks"] for row in rows), default=0)
     return [{**row, "share": round(row["clicks"] / peak * 100) if peak else 0} for row in rows]
 
@@ -320,6 +321,28 @@ def api_key_revoke(request, pk):
 
 def api_docs(request):
     return render(request, "web/api_docs.html", {"section": "docs"})
+
+
+def robots(request):
+    """Only the home page and the API reference are worth crawling.
+
+    Everything else is either behind a login or per-user, and /api/ answers
+    JSON that has no business in a search index.
+    """
+    lines = [
+        "User-agent: *",
+        "Disallow: /admin/",
+        "Disallow: /api/",
+        "Disallow: /dashboard",
+        "Disallow: /links/",
+        "Disallow: /keys",
+        "Disallow: /login",
+        "Disallow: /register",
+        "",
+        f"Sitemap: {settings.WEB_DOMAIN.rstrip('/')}/sitemap.xml",
+        "",
+    ]
+    return HttpResponse("\n".join(lines), content_type="text/plain")
 
 
 def not_found(request, exception=None):

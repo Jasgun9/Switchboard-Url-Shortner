@@ -51,7 +51,7 @@ class URLCreationTests(AppTestCase):
         self.assertEqual(response.json()["error"]["code"], "ALIAS_ALREADY_EXISTS")
 
     def test_alias_race_is_decided_by_the_database(self):
-        """Both requests see the alias as free; the loser must get a clean 409."""
+        # Both requests see the alias as free; the loser must get a clean 409.
         ShortURL.objects.create(code="contested", destination="https://example.com/winner")
 
         response = self.client.post(

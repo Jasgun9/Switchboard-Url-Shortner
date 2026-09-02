@@ -5,7 +5,7 @@ from core.clientinfo import client_ip
 
 
 class RedisThrottle(BaseThrottle):
-    """Bridges DRF's throttling hook to the shared Redis limiter."""
+    # Bridges DRF's throttling hook to the shared Redis limiter.
 
     scope = None
 

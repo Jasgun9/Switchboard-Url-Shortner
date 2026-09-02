@@ -7,8 +7,7 @@ from django.core.exceptions import ValidationError
 
 ALIAS_PATTERN = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 
-# Paths either service already serves, plus names that would be confusing or
-# valuable enough that nobody should be able to claim them.
+# Paths the two services already serve, plus names nobody should be able to grab.
 RESERVED_ALIASES = {
     "about", "account", "admin", "analytics", "api", "assets", "auth", "billing",
     "blog", "contact", "css", "dashboard", "docs", "favicon.ico", "health",

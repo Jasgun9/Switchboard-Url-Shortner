@@ -38,8 +38,8 @@ def consume(scope, identifier):
         pipe.expire(key, seconds_left + 1)
         count = pipe.execute()[0]
     except redis.RedisError:
-        # Failing open keeps the site usable during a Redis outage. The
-        # alternative locks everyone out of login for the duration.
+        # Fail open. Locking everyone out of login for the length of a Redis outage
+        # is worse than whatever slips through.
         log.warning("rate limit skipped, redis unavailable (scope=%s)", scope)
         return Verdict(True, limit, limit, 0)
 
@@ -49,7 +49,7 @@ def consume(scope, identifier):
 
 
 def reset(scope, identifier):
-    """Clear a counter, e.g. after a successful login."""
+    # Clear a counter, e.g. after a successful login.
     _, window = settings.RATE_LIMITS[scope]
     key, _ = _window_key(scope, identifier, window)
     try:

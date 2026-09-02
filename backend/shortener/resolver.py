@@ -11,8 +11,8 @@ def resolve(code):
     Returns a small payload dict, or None when the code does not resolve
     (unknown, disabled, soft-deleted or expired).
     """
-    # No stored code can be longer than this, so an oversized path is answered
-    # without spending a cache key or a query on it.
+    # Nothing stored is longer than this, so bail before spending a cache key
+    # or a query on it.
     if not code or len(code) > settings.ALIAS_MAX_LENGTH:
         return None
 
@@ -29,8 +29,8 @@ def resolve(code):
         payload = cache.payload_for(url)
         cache.store(code, payload)
 
-    # Second expiry check: a cached entry written just before expiry could still
-    # be within its TTL.
+    # Check expiry again. An entry written just before expiry can still be
+    # inside its TTL.
     expires_at = cache.payload_expires_at(payload)
     if expires_at is not None and expires_at <= timezone.now():
         cache.forget(code)

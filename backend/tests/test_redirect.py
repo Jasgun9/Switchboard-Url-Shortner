@@ -105,7 +105,7 @@ class ResolveCacheTests(AppTestCase):
         self.assertEqual(self.client.get("/ticking").status_code, 404)
 
     def test_a_reclaimed_alias_redirects_to_the_new_destination(self):
-        """The old link's cached entry must not survive the handover."""
+        # The old link's cached entry must not survive the handover.
         first = ShortURL.objects.create(code="promo", destination="https://example.com/old")
         self.assertEqual(self.client.get("/promo")["Location"], "https://example.com/old")
 

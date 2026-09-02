@@ -19,7 +19,7 @@ SOFT_DELETE_GRACE_DAYS = 30
 
 @shared_task(bind=True, max_retries=3, default_retry_delay=30, ignore_result=True)
 def record_click(self, short_url_id, ip, user_agent, referrer_host, occurred_at):
-    """Write one click row. GeoIP and UA parsing happen here, never in the request."""
+    # Write one click row. GeoIP and UA parsing happen here, never in the request.
     location = geo.lookup(ip)
     agent = parse_user_agent(user_agent)
 
@@ -37,9 +37,8 @@ def record_click(self, short_url_id, ip, user_agent, referrer_host, occurred_at)
         user_agent=(user_agent or "")[:400],
     )
 
-    # Counters are updated with an UPDATE rather than save() so concurrent
-    # clicks do not overwrite each other. click_count is not part of the
-    # resolve cache payload, so nothing needs invalidating here.
+    # UPDATE rather than save() so concurrent clicks don't clobber each other.
+    # click_count isn't in the resolve payload, so there's no cache to bust.
     ShortURL.objects.filter(pk=short_url_id).update(
         click_count=F("click_count") + 1,
         last_clicked_at=occurred_at,
@@ -47,7 +46,7 @@ def record_click(self, short_url_id, ip, user_agent, referrer_host, occurred_at)
 
 
 def enqueue_click(short_url_id, ip, user_agent, referrer_host, occurred_at):
-    """Hand a click to Celery. A broker outage costs analytics, not redirects."""
+    # Hand a click to Celery. A broker outage costs analytics, not redirects.
     try:
         record_click.delay(short_url_id, ip, user_agent, referrer_host, occurred_at)
     except OperationalError as exc:
@@ -56,7 +55,7 @@ def enqueue_click(short_url_id, ip, user_agent, referrer_host, occurred_at):
 
 @shared_task(ignore_result=True)
 def purge_old_clicks():
-    """Retention policy: raw click rows are deleted once they age out."""
+    # Retention policy: raw click rows are deleted once they age out.
     cutoff = timezone.now() - timedelta(days=settings.CLICK_RETENTION_DAYS)
     deleted, _ = ClickEvent.objects.filter(created_at__lt=cutoff).delete()
     if deleted:

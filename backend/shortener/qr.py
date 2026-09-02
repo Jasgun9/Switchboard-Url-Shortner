@@ -6,7 +6,7 @@ from django.core.cache import cache
 
 
 def png_for(short_url):
-    """PNG bytes for a short link, cached because the image never changes."""
+    # PNG bytes for a short link, cached because the image never changes.
     key = f"qr:{short_url.code}"
     cached = cache.get(key)
     if cached is not None:

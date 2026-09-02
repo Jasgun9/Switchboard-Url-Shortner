@@ -79,7 +79,7 @@ class ShortURLStateTests(AppTestCase):
 
 
 class CodeReuseTests(AppTestCase):
-    """A deleted or expired link gives its alias back."""
+    # A deleted or expired link gives its alias back.
 
     def test_deleted_links_alias_can_be_claimed_again(self):
         first = create_short_url(destination="https://example.com/old", alias="promo")
@@ -123,7 +123,7 @@ class CodeReuseTests(AppTestCase):
             create_short_url(destination="https://example.com/new", alias="promo")
 
     def test_a_disabled_link_keeps_its_alias(self):
-        """Disabling is meant to be reversible, so it must not free the code."""
+        # Disabling is meant to be reversible, so it must not free the code.
         first = create_short_url(destination="https://example.com/old", alias="promo")
         first.is_active = False
         first.save()
@@ -132,7 +132,7 @@ class CodeReuseTests(AppTestCase):
             create_short_url(destination="https://example.com/new", alias="promo")
 
     def test_only_one_claimant_wins_a_released_alias(self):
-        """Both requests see the alias as free; the constraint picks the winner."""
+        # Both requests see the alias as free; the constraint picks the winner.
         first = create_short_url(destination="https://example.com/old", alias="promo")
         first.soft_delete()
 

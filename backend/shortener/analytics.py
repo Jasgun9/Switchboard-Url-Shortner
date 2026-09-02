@@ -20,7 +20,7 @@ def _breakdown(queryset, field, limit=TOP_N):
 
 
 def summary(short_url, days=30):
-    """Everything the analytics page needs, in a handful of grouped queries."""
+    # Everything the analytics page needs, in a handful of grouped queries.
     days = max(1, min(days, MAX_WINDOW_DAYS))
     since = timezone.now() - timedelta(days=days)
     clicks = ClickEvent.objects.filter(short_url=short_url, created_at__gte=since)
@@ -33,7 +33,7 @@ def summary(short_url, days=30):
     )
     timeseries = {row["day"].isoformat(): row["clicks"] for row in by_day}
 
-    # Fill the gaps so the chart does not silently skip quiet days.
+    # Fill the gaps, otherwise the chart quietly skips days with no clicks.
     today = timezone.localdate()
     series = []
     for offset in range(days - 1, -1, -1):

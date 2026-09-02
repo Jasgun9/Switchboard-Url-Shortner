@@ -41,8 +41,8 @@ class ShortURLViewSet(viewsets.ModelViewSet):
     throttle_classes = [APIThrottle]
 
     def get_queryset(self):
-        # Scoping every query to request.user is what prevents one account from
-        # reaching another's links by guessing an id.
+        # Scoped to request.user. This is the only thing standing between an id in
+        # the URL and someone else's links.
         queryset = ShortURL.objects.filter(owner=self.request.user, deleted_at__isnull=True)
 
         search = self.request.query_params.get("search", "").strip()
@@ -66,8 +66,7 @@ class ShortURLViewSet(viewsets.ModelViewSet):
         return queryset.order_by(ordering, "-id")
 
     def get_permissions(self):
-        # Anonymous visitors may shorten a link from the home page; everything
-        # else needs an account.
+        # Anyone can shorten from the home page. Everything else needs an account.
         if self.action == "create":
             return [AllowAny()]
         return [IsAuthenticated()]
@@ -78,8 +77,7 @@ class ShortURLViewSet(viewsets.ModelViewSet):
         return super().get_throttles()
 
     def perform_destroy(self, instance):
-        # Soft delete: the row and its click history survive, but the link
-        # stops resolving and its code is released for reuse.
+        # Soft delete keeps the row and its clicks, stops the redirect, frees the code.
         instance.soft_delete()
 
     @action(detail=True, methods=["get"])
@@ -96,7 +94,7 @@ class ShortURLViewSet(viewsets.ModelViewSet):
 @authentication_classes([])
 @permission_classes([AllowAny])
 def qr_code(request, code):
-    """Public: the QR only encodes the short link, which is already public."""
+    # Public: the QR only encodes the short link, which is already public.
     verdict = ratelimit.consume("redirect", f"qr:{client_ip(request)}")
     if not verdict.allowed:
         raise APIError("RATE_LIMITED", "Too many requests.", status.HTTP_429_TOO_MANY_REQUESTS)
@@ -112,7 +110,7 @@ def qr_code(request, code):
 
 
 class APIKeyViewSet(viewsets.ModelViewSet):
-    """Key management is session-only on purpose: a leaked key cannot mint more keys."""
+    # Session auth only, so a leaked key can't be used to mint more keys.
 
     serializer_class = APIKeySerializer
     authentication_classes = [SessionAuthentication]
@@ -135,7 +133,7 @@ class APIKeyViewSet(viewsets.ModelViewSet):
         log.info("api key %s created for user %s", key.prefix, request.user.pk)
 
         body = self.get_serializer(key).data
-        # The only time the secret is ever returned.
+        # Only place the secret is ever returned.
         body["token"] = token
         return Response(body, status=status.HTTP_201_CREATED)
 

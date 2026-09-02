@@ -1,9 +1,9 @@
 /* Homepage shorten form.
 
-   Progressive enhancement: without JS the form posts to the Django view and
-   the server renders the result. With JS we call the same REST API the docs
-   describe and swap the form for the result in place, which is the whole point
-   of the interaction — a long URL visibly becoming a short one. */
+   No JS: the form posts to the Django view and the server renders the result.
+   With JS: same thing through the REST API, but the form turns into the result
+   in place. That swap is the interaction worth having, so it's worth the extra
+   code path. */
 
 (function () {
   "use strict";
@@ -55,8 +55,7 @@
     el.url.href = link.short_url;
     el.copy.dataset.copy = link.short_url;
     el.copy.dataset.copied = "false";
-    // Matches what the server renders when JavaScript is off. The full URL
-    // stays available on hover.
+    // Same truncation the server does. Full URL goes on the title attribute.
     el.dest.textContent = "Redirects to " + truncate(link.destination, 90);
     el.dest.title = link.destination;
     el.qr.src = link.qr_url;
@@ -65,8 +64,8 @@
     if (el.analytics) el.analytics.href = "/links/" + link.id + "/analytics";
   }
 
-  /* The form collapses and the result rises into the space it left. One
-     timeline so the two halves cannot drift apart. */
+  /* Form collapses, result rises into the gap. One timeline, so the two halves
+     can't drift apart. */
   function revealResult() {
     if (reduced.matches || !window.gsap) {
       formBlock.style.display = "none";
@@ -75,8 +74,8 @@
       return;
     }
 
-    // The result only claims layout once the form has left it, so nothing
-    // jumps while the two states cross over.
+    // Result only takes up space once the form is gone, or the page jumps
+    // while the two cross over.
     gsap.timeline({ defaults: { ease: "power2.out" } })
       .to(formBlock, { opacity: 0, y: -6, duration: 0.16 })
       .set(formBlock, { display: "none" })

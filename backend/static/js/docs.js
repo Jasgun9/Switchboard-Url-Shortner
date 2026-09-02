@@ -1,5 +1,5 @@
-/* API reference: highlight the section currently in view and scroll smoothly
-   to it when a sidebar link is clicked. */
+/* Sidebar for the API reference: highlight whatever section you're looking at,
+   and scroll to it when a link is clicked. */
 
 (function () {
   "use strict";
@@ -17,8 +17,8 @@
     });
   }
 
-  // Bias the observation band towards the top of the viewport so the heading
-  // you are reading is the one highlighted, not the one halfway down.
+  // Band is biased towards the top of the viewport, otherwise the highlighted
+  // heading is the one halfway down the screen rather than the one you're on.
   const observer = new IntersectionObserver(
     function (entries) {
       const visible = entries.filter(function (entry) { return entry.isIntersecting; });

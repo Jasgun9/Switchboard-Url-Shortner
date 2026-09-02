@@ -5,14 +5,14 @@ Wants=redis-server.service
 
 [Service]
 Type=simple
-User=urlshortener
-Group=urlshortener
-WorkingDirectory=/srv/urlshortener/backend
-EnvironmentFile=/srv/urlshortener/backend/.env
+User=switchboard
+Group=switchboard
+WorkingDirectory=/srv/switchboard/backend
+EnvironmentFile=/srv/switchboard/backend/.env
 # Only ever run one beat process, otherwise the nightly jobs fire twice.
-ExecStart=/srv/urlshortener/backend/.venv/bin/celery -A config beat \
+ExecStart=/srv/switchboard/backend/.venv/bin/celery -A config beat \
     --loglevel=INFO \
-    --schedule=/var/lib/urlshortener/celerybeat-schedule
+    --schedule=/var/lib/switchboard/celerybeat-schedule
 Restart=always
 RestartSec=5
 
@@ -20,8 +20,8 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-StateDirectory=urlshortener
-ReadWritePaths=/srv/urlshortener/backend /var/lib/urlshortener
+StateDirectory=switchboard
+ReadWritePaths=/srv/switchboard/backend /var/lib/switchboard
 
 [Install]
 WantedBy=multi-user.target

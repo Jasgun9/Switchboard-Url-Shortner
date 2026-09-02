@@ -12,7 +12,7 @@ log = logging.getLogger(__name__)
 
 @never_cache
 def live(request):
-    """Process is up. Deliberately touches nothing else."""
+    # Process is up. Touches nothing else, that's the point.
     return JsonResponse({"status": "ok"})
 
 
@@ -35,8 +35,7 @@ def ready(request):
         log.warning("readiness: redis check failed: %s", exc)
         checks["redis"] = "error"
 
-    # Redis being down degrades performance but the service still resolves URLs
-    # from the database, so only the database gates readiness.
+    # Without Redis we're slow, not down, so only the database decides readiness.
     healthy = checks["database"] == "ok"
     return JsonResponse(
         {"status": "ok" if healthy else "unavailable", "checks": checks},

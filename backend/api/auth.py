@@ -11,7 +11,7 @@ from shortener.models import APIKey, hash_api_secret
 log = logging.getLogger(__name__)
 
 TOKEN_PREFIX = "usk"
-# Writing last_used_at on every request would add a row lock per API call.
+# Don't touch last_used_at on every call, that's a row lock per request.
 LAST_USED_RESOLUTION = timedelta(minutes=1)
 
 

@@ -10,8 +10,8 @@ User = get_user_model()
 
 MIN_LINK_PASSWORD_LENGTH = 6
 
-# Times are entered and shown in UTC. Detecting the visitor's timezone would
-# mean either a cookie handshake or a JS conversion layer for one field.
+# UTC in and out. Working out the visitor's zone means a cookie handshake or
+# a JS conversion layer, for the sake of two fields.
 DATETIME_LOCAL = {"type": "datetime-local"}
 DATETIME_LOCAL_FORMAT = "%Y-%m-%dT%H:%M"
 
@@ -90,7 +90,7 @@ class ShortenForm(forms.Form):
 
 
 class LinkForm(forms.Form):
-    """Create and edit share this form; `instance` switches off the alias field."""
+    # Create and edit share this form; `instance` switches off the alias field.
 
     destination = forms.CharField(max_length=2048, widget=forms.URLInput)
     title = forms.CharField(max_length=120, required=False)
@@ -107,7 +107,7 @@ class LinkForm(forms.Form):
             del self.fields["remove_password"]
             del self.fields["is_active"]
         else:
-            # A code is part of every link already handed out, so it is fixed.
+            # The code is in every link already shared, so it can't move.
             del self.fields["alias"]
 
     def clean_destination(self):

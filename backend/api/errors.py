@@ -29,7 +29,7 @@ CODES_BY_EXCEPTION = {
 
 
 class APIError(exceptions.APIException):
-    """Raise for the domain-specific failures the API names explicitly."""
+    # Raise for the domain-specific failures the API names explicitly.
 
     def __init__(self, code, message, status_code=status.HTTP_400_BAD_REQUEST):
         self.error_code = code
@@ -45,8 +45,8 @@ def error_body(code, message, details=None):
 
 
 def _message(exc, response):
-    # Django's own Http404 and PermissionDenied reach here without a `detail`;
-    # DRF has already put a usable message into the response body.
+    # Http404 and PermissionDenied arrive without .detail, but DRF has already
+    # put a message in the body.
     detail = getattr(exc, "detail", None)
     if detail is None and isinstance(response.data, dict):
         detail = response.data.get("detail", "")
@@ -62,8 +62,8 @@ def exception_handler(exc, context):
     response = drf_exception_handler(exc, context)
 
     if response is None:
-        # Anything DRF does not recognise is a bug. Log it with the traceback
-        # and return a body that never leaks internals.
+        # Anything DRF didn't recognise is a bug on our side. Log the traceback,
+        # return something that gives nothing away.
         log.exception("unhandled API exception in %s", context.get("view"))
         if settings.DEBUG:
             return None

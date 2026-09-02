@@ -1,6 +1,7 @@
-﻿/* Shared UI behaviour: entrance, nav, dropdowns, dialogs, copy, disclosure,
-   password reveal, form loading states.
-   GSAP handles sequenced entrances; Motion handles one-off element states. */
+﻿/* Shared bits: entrance, nav, dropdowns, dialogs, copy, disclosure, password
+   reveal, submit states.
+
+   GSAP for anything sequenced, Motion for one-off element states. */
 
 (function () {
   "use strict";
@@ -9,15 +10,15 @@
   const still = () => reduced.matches;
 
   /* --- page entrance -----------------------------------------------------
-     Blocks already on screen fade up in one staggered run. Blocks further down
-     wait until they are scrolled to — holding the whole page at opacity 0 would
-     leave a visitor who scrolls immediately looking at empty sections. */
+     On-screen blocks fade up in one staggered run. Anything below the fold
+     waits until you scroll to it. Holding the whole page at opacity 0 means
+     someone who scrolls straight away stares at empty sections. */
 
   function entrance() {
     const targets = Array.from(document.querySelectorAll("main [data-animate]"));
 
-    // Releasing the class and setting the from-state happen in the same task,
-    // so the browser never paints the elements in between.
+    // Drop the class and set the from-state in the same task, or the browser
+    // gets a frame to paint them at full opacity first.
     document.documentElement.classList.remove("preanimate");
 
     if (!targets.length || still() || !window.gsap) return;
@@ -82,7 +83,7 @@
   }
 
   /* --- dropdowns ---------------------------------------------------------
-     One open at a time, closed by Escape or an outside click. */
+     One open at a time. Escape or a click outside closes it. */
 
   function closeDropdown(root) {
     const menu = root.querySelector("[data-dropdown-menu]");
@@ -132,7 +133,7 @@
   }
 
   /* --- copy to clipboard -------------------------------------------------
-     Buttons carry the value in data-copy and swap their own label. */
+     Value rides on data-copy; the button swaps its own label. */
 
   function copyButtons() {
     document.addEventListener("click", async function (event) {
@@ -142,7 +143,7 @@
       try {
         await navigator.clipboard.writeText(button.dataset.copy);
       } catch (error) {
-        // Clipboard permission can be refused; the value is always on screen.
+        // Clipboard can be refused. The value is on screen anyway, so let it go.
         return;
       }
 
@@ -158,8 +159,8 @@
   }
 
   /* --- progressive disclosure --------------------------------------------
-     Height is animated from the measured content height, then released to
-     auto so the panel keeps reflowing with its contents. */
+     Animate to the measured height, then hand it back to auto so the panel
+     keeps reflowing if its contents change. */
 
   function disclosures() {
     document.querySelectorAll("[data-disclosure]").forEach(function (toggle) {
@@ -219,7 +220,7 @@
   }
 
   /* --- confirm dialogs ----------------------------------------------------
-     A trigger names a <dialog>; confirming submits the trigger's own form. */
+     The form names a <dialog>. Confirming re-submits that same form. */
 
   function confirmDialogs() {
     document.querySelectorAll("[data-confirm]").forEach(function (form) {

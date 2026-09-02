@@ -1,9 +1,25 @@
 {% extends "web/base.html" %}
 {% load static %}
 
-{% block title %}short. — link management with click analytics{% endblock %}
+{% block title %}Switchboard — link shortener with click analytics{% endblock %}
+{% block robots %}index, follow{% endblock %}
+{% block og_title %}Switchboard — link shortener with click analytics{% endblock %}
 
-{% block scripts %}<script src="{% static 'js/shorten.js' %}" defer></script>{% endblock %}
+{% block scripts %}
+<script src="{% static 'js/shorten.js' %}" defer></script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "Switchboard",
+  "url": "{{ web_domain }}/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Any",
+  "description": "Shorten links and track clicks by country, device, browser and referrer. QR codes, expiry, password protection and a REST API.",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
+{% endblock %}
 
 {% block main %}
 

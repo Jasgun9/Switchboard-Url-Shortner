@@ -6,7 +6,7 @@ MAX_STORED_LENGTH = 400
 
 
 def parse_user_agent(raw):
-    """Turn a User-Agent string into the few buckets analytics actually shows."""
+    # Turn a User-Agent string into the few buckets analytics actually shows.
     if not raw:
         return {"device": ClickEvent.Device.UNKNOWN, "browser": "", "os": ""}
 
@@ -31,6 +31,6 @@ def parse_user_agent(raw):
 
 
 def _clean(family):
-    # ua-parser reports "Other" when it cannot identify something; an empty
-    # string groups better in analytics queries.
+    # ua-parser says "Other" when it gives up. Empty groups better in the
+    # analytics queries.
     return "" if not family or family == "Other" else family[:40]

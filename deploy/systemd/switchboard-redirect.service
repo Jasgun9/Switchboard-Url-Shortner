@@ -5,22 +5,22 @@ Wants=postgresql.service redis-server.service
 
 [Service]
 Type=notify
-User=urlshortener
-Group=urlshortener
-WorkingDirectory=/srv/urlshortener/backend
-EnvironmentFile=/srv/urlshortener/backend/.env
+User=switchboard
+Group=switchboard
+WorkingDirectory=/srv/switchboard/backend
+EnvironmentFile=/srv/switchboard/backend/.env
 Environment=DJANGO_ROOT_URLCONF=config.urls_redirect
 # The redirect path is short and cache-backed, so more workers with a tight
 # timeout is the right shape here.
-ExecStart=/srv/urlshortener/backend/.venv/bin/gunicorn config.wsgi_redirect:application \
-    --bind unix:/run/urlshortener/redirect.sock \
+ExecStart=/srv/switchboard/backend/.venv/bin/gunicorn config.wsgi_redirect:application \
+    --bind unix:/run/switchboard/redirect.sock \
     --workers 4 \
     --timeout 15 \
     --graceful-timeout 15 \
     --access-logfile - \
     --error-logfile -
 ExecReload=/bin/kill -s HUP $MAINPID
-RuntimeDirectory=urlshortener
+RuntimeDirectory=switchboard
 Restart=always
 RestartSec=3
 
@@ -28,7 +28,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/urlshortener/backend
+ReadWritePaths=/srv/switchboard/backend
 
 [Install]
 WantedBy=multi-user.target

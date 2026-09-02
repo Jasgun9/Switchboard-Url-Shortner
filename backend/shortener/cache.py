@@ -1,8 +1,8 @@
-"""Redis-backed cache for the redirect hot path.
+"""Redis cache for the redirect hot path.
 
-The cached payload deliberately carries `expires_at` so a stale entry can never
-outlive the link it describes: the redirect view re-checks expiry against the
-cached value, and the entry's TTL is additionally capped at the link's lifetime.
+The payload carries `expires_at` so a stale entry can't outlive the link it
+describes. Belt and braces: the redirect view re-checks expiry against the
+cached value, and the TTL is capped at the link's remaining lifetime anyway.
 """
 
 from django.conf import settings
@@ -23,8 +23,8 @@ def payload_for(url):
         "destination": url.destination,
         "has_password": url.has_password,
         "expires_at": url.expires_at.isoformat() if url.expires_at else None,
-        # Not the hash itself: only a marker, so that changing the password
-        # invalidates unlock cookies issued against the previous one.
+        # A marker, not the hash. Changing the password invalidates the unlock
+        # cookies handed out under the old one.
         "password_version": url.password_updated_at.isoformat() if url.password_updated_at else "",
     }
 
@@ -35,7 +35,7 @@ def payload_expires_at(payload):
 
 
 def load(code):
-    """Return a payload dict, the MISSING sentinel, or None for a cache miss."""
+    # Return a payload dict, the MISSING sentinel, or None for a cache miss.
     return cache.get(_key(code))
 
 
@@ -51,7 +51,7 @@ def store(code, payload):
 
 
 def store_missing(code):
-    """Short negative cache so scanners hitting random codes do not reach the database."""
+    # Short negative cache so scanners hitting random codes do not reach the database.
     cache.set(_key(code), MISSING, settings.MISSING_CACHE_TTL)
 
 

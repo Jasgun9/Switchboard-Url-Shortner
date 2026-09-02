@@ -5,11 +5,11 @@ Wants=postgresql.service redis-server.service
 
 [Service]
 Type=simple
-User=urlshortener
-Group=urlshortener
-WorkingDirectory=/srv/urlshortener/backend
-EnvironmentFile=/srv/urlshortener/backend/.env
-ExecStart=/srv/urlshortener/backend/.venv/bin/celery -A config worker \
+User=switchboard
+Group=switchboard
+WorkingDirectory=/srv/switchboard/backend
+EnvironmentFile=/srv/switchboard/backend/.env
+ExecStart=/srv/switchboard/backend/.venv/bin/celery -A config worker \
     --loglevel=INFO \
     --concurrency=2 \
     --max-tasks-per-child=500
@@ -22,7 +22,7 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=strict
 ProtectHome=true
-ReadWritePaths=/srv/urlshortener/backend
+ReadWritePaths=/srv/switchboard/backend
 
 [Install]
 WantedBy=multi-user.target

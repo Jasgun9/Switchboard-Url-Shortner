@@ -1,7 +1,11 @@
 {% extends "web/base.html" %}
 {% load static %}
 
-{% block title %}API reference — short.{% endblock %}
+{% block title %}API reference — Switchboard{% endblock %}
+{% block description %}REST API reference for Switchboard: create, list, update and delete short links, read click analytics, and manage scoped API keys. JSON over HTTPS with a consistent error envelope.{% endblock %}
+{% block robots %}index, follow{% endblock %}
+{% block og_title %}Switchboard API reference{% endblock %}
+{% block og_description %}Create and manage short links from a script. JSON over HTTPS, scoped bearer keys, consistent errors.{% endblock %}
 
 {% block scripts %}<script src="{% static 'js/docs.js' %}" defer></script>{% endblock %}
 

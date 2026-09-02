@@ -16,7 +16,7 @@ def client_ip(request):
 
 
 def hash_ip(ip):
-    """Salted, truncated digest so click rows can be counted but not reversed."""
+    # Salted, truncated digest so click rows can be counted but not reversed.
     if not ip:
         return ""
     digest = hashlib.sha256(f"{settings.IP_HASH_SALT}:{ip}".encode()).hexdigest()

@@ -13,12 +13,14 @@ API_KEY_PREFIX_LENGTH = 8
 API_KEY_SECRET_BYTES = 32
 
 
+# Raised when repeated random codes all collided with existing rows.
 class CodeGenerationError(Exception):
-    """Raised when repeated random codes all collided with existing rows."""
+    pass
 
 
+# Raised when a requested custom alias is already claimed.
 class AliasTaken(Exception):
-    """Raised when a requested custom alias is already claimed."""
+    pass
 
 
 class ShortURLQuerySet(models.QuerySet):
@@ -46,8 +48,8 @@ class ShortURL(models.Model):
     password_updated_at = models.DateTimeField(null=True, blank=True)
     expires_at = models.DateTimeField(null=True, blank=True)
     deleted_at = models.DateTimeField(null=True, blank=True)
-    # Set once this row stops owning its code, which is what lets a deleted or
-    # expired link's alias be claimed again while its click history survives.
+    # Stamped when this row gives up its code. Lets a deleted or expired link's
+    # alias be claimed again without throwing away its clicks.
     code_released_at = models.DateTimeField(null=True, blank=True)
     click_count = models.BigIntegerField(default=0)
     last_clicked_at = models.DateTimeField(null=True, blank=True)
@@ -58,9 +60,9 @@ class ShortURL(models.Model):
 
     class Meta:
         constraints = [
-            # Only one row may own a code at a time. Released rows drop out of
-            # the index, so their alias becomes claimable again — and this is
-            # still the database deciding who wins a contested claim.
+            # One live owner per code. Released rows fall out of the index so
+            # the alias frees up, and the database still settles who wins a
+            # contested claim.
             models.UniqueConstraint(
                 fields=["code"],
                 condition=models.Q(code_released_at__isnull=True),
@@ -107,7 +109,7 @@ class ShortURL(models.Model):
 
     @property
     def is_code_released(self):
-        """True once someone else is free to claim this link's code."""
+        # True once anyone else is free to claim this code.
         return self.code_released_at is not None
 
     def is_resolvable(self):
@@ -123,11 +125,7 @@ class ShortURL(models.Model):
         return check_password(raw_password, self.password_hash)
 
     def soft_delete(self):
-        """Retire the link and free its code straight away.
-
-        The row and its clicks stay, so the history survives; only the claim on
-        the code is given up.
-        """
+        # Retire the link and hand its code back. Row and clicks stay put.
         now = timezone.now()
         self.deleted_at = now
         self.code_released_at = now
@@ -136,16 +134,16 @@ class ShortURL(models.Model):
 
 
 def save_with_random_code(url):
-    """Insert an unsaved ShortURL, retrying until a generated code is free.
+    """Insert an unsaved ShortURL, retrying until a code sticks.
 
-    The unique constraint is what actually decides the winner: two requests can
-    generate the same code and both pass any prior existence check.
+    Two requests can generate the same code and both pass an existence check,
+    so the constraint is what actually picks the winner.
     """
     for _ in range(settings.SHORT_CODE_MAX_ATTEMPTS):
         url.code = generate_code()
         try:
-            # Own savepoint per attempt, otherwise a failed INSERT poisons the
-            # surrounding transaction on PostgreSQL.
+            # Savepoint per attempt. On Postgres a failed INSERT poisons the whole
+            # surrounding transaction otherwise.
             with transaction.atomic():
                 url.save(force_insert=True)
         except IntegrityError:
@@ -156,17 +154,16 @@ def save_with_random_code(url):
 
 
 def release_reclaimable_code(code):
-    """Give up the claim on `code` if its current holder is retired.
+    """Hand back `code` if whoever holds it is deleted or already expired.
 
-    A link that is deleted or already past its expiry no longer resolves, so
-    holding onto the alias serves nobody. Disabled links are left alone: being
-    switched off is meant to be reversible.
+    Neither of those resolves any more, so sitting on the alias helps nobody.
+    Disabled links keep theirs, since switching one off is reversible.
     """
     now = timezone.now()
     holders = ShortURL.objects.filter(code=code, code_released_at__isnull=True).filter(
         models.Q(deleted_at__isnull=False) | models.Q(expires_at__lte=now)
     )
-    # A queryset update skips save(), so the resolve cache is cleared by hand.
+    # .update() skips save(), so clear the cache by hand.
     released = holders.update(code_released_at=now)
     if released:
         cache.forget(code)
@@ -174,10 +171,10 @@ def release_reclaimable_code(code):
 
 
 def create_short_url(*, destination, owner=None, title="", alias="", expires_at=None, password=""):
-    """Create a link. Both the HTML forms and the API go through here.
+    """Create a link. Both the HTML forms and the API come through here.
 
-    Assumes its arguments are already validated; it only owns the part that
-    cannot be validated up front, which is who wins a contested code.
+    Arguments are assumed validated already. All this owns is the bit you
+    can't validate up front: who ends up with a contested code.
     """
     url = ShortURL(destination=destination, owner=owner, title=title, expires_at=expires_at)
     if password:
@@ -189,13 +186,13 @@ def create_short_url(*, destination, owner=None, title="", alias="", expires_at=
     url.code = alias
     url.is_custom_alias = True
     try:
-        # Releasing and inserting share a transaction: if someone else wins the
-        # insert, the release rolls back with it and their claim stands.
+        # Release and insert in one transaction. If someone else wins the insert our
+        # release rolls back with it and their claim stands.
         with transaction.atomic():
             release_reclaimable_code(alias)
             url.save(force_insert=True)
     except IntegrityError:
-        # Two requests can both see the alias as free and both try to insert it.
+        # Both requests can see the alias as free and both try to insert.
         raise AliasTaken(alias)
     return url
 
@@ -242,8 +239,8 @@ class APIKey(models.Model):
     owner = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="api_keys")
     name = models.CharField(max_length=60)
     prefix = models.CharField(max_length=API_KEY_PREFIX_LENGTH, unique=True)
-    # SHA-256 rather than a password hasher: the secret is 256 bits of CSPRNG
-    # output, so there is nothing to brute force and lookups stay cheap.
+    # SHA-256, not a password hasher. The secret is 256 bits straight from the
+    # CSPRNG, so there's no dictionary to run and lookups stay cheap.
     secret_hash = models.CharField(max_length=64)
     created_at = models.DateTimeField(auto_now_add=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
