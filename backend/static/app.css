@@ -321,6 +321,25 @@ main { flex: 1; }
 .footer nav a { font-size: var(--fs-14); font-weight: 500; color: var(--text-2); }
 .footer nav a:hover { color: var(--accent); }
 
+/* Must come after `.footer nav` -- same specificity, so source order decides
+   whose gap and link colour win. padding-block only, because this element is
+   also a .shell and .shell owns the horizontal padding. */
+.byline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s-2) var(--s-6);
+  flex-wrap: wrap;
+  padding-block: var(--s-6);
+  border-top: 1px solid var(--border);
+  font-size: var(--fs-15);
+  color: var(--text-2);
+}
+.byline strong { font-weight: 700; color: var(--text); }
+.byline nav { gap: var(--s-6); }
+.byline nav a { font-size: var(--fs-15); color: var(--text-2); }
+.byline nav a:hover { color: var(--accent); }
+
 /* --------------------------------------------------------------------------
    Page structure (product pages)
    -------------------------------------------------------------------------- */
@@ -1256,6 +1275,7 @@ details.data-table[open] summary::before { content: "⌄"; }
   .table-stack .row-actions { justify-content: flex-start; margin-top: var(--s-2); }
 
   .footer-inner { min-height: 0; padding-block: var(--s-8); }
+  .byline { padding-block: var(--s-5); }
 }
 
 /* --------------------------------------------------------------------------

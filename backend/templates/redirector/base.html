@@ -146,6 +146,32 @@ mirror the web app's design system.
 
   footer { margin-top: 24px; text-align: center; font-size: 14px; color: var(--text-3); }
 
+  .byline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 4px 10px;
+    margin: 28px 0 0;
+    font-size: 15px;
+    line-height: 1.5;
+    color: var(--text-2);
+  }
+  .byline strong { font-weight: 700; color: var(--text); }
+  /* Grey rather than accent blue: on the password page the only blue on screen
+     should be the Continue button. */
+  .byline a { font-weight: 500; color: var(--text-2); }
+  .byline a:hover { color: var(--accent); }
+  .byline .sep { color: var(--text-3); }
+  .byline .links { display: inline-flex; align-items: center; gap: 10px; }
+
+  /* Too narrow for one line: stack the name over the links rather than let the
+     middle separator dangle at the end of the first row. */
+  @media (max-width: 420px) {
+    .byline { flex-direction: column; gap: 6px; }
+    .byline > .sep { display: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     * { transition-duration: .001ms !important; }
     button:hover { transform: none; }
@@ -166,6 +192,20 @@ mirror the web app's design system.
     {% block content %}{% endblock %}
   </div>
   {% block footer %}{% endblock %}
+
+  {% comment %}
+  Outside the footer block on purpose, so it appears on every page this service
+  renders -- the password gate included, not just the 404.
+  {% endcomment %}
+  <p class="byline">
+    <span>Made by <strong>Jasgun Singh</strong></span>
+    <span class="sep" aria-hidden="true">&middot;</span>
+    <span class="links">
+      <a href="https://jasgun.me" rel="me">Portfolio</a>
+      <span class="sep" aria-hidden="true">&middot;</span>
+      <a href="https://github.com/Jasgun9" rel="me noreferrer">GitHub</a>
+    </span>
+  </p>
 </main>
 </body>
 </html>
