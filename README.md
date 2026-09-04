@@ -116,3 +116,17 @@ actually doing, and the trade-offs that were made on purpose.
 ## Licence
 
 MIT — see [LICENSE](LICENSE). Do what you like with it.
+
+
+---
+
+## Support
+
+If you find this project useful, you can support my work by buying me a chai.
+
+<a href="https://buymeachai.ezee.li/Jasgunsingh">
+  <img src="https://buymeachai.ezee.li/assets/images/buymeachai-button.png"
+       alt="Buy Me A Chai"
+       width="180">
+</a>
+
