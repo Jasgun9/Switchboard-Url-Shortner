@@ -9,6 +9,7 @@ from web.sitemaps import PublicPages
 sitemaps = {"pages": PublicPages}
 
 urlpatterns = [
+    path('favicon.ico', RedirectView.as_view(url=static('favicon.ico'), permanent=True)),
     path("admin/", admin.site.urls),
     path("api/v1/", include("api.urls")),
     path("health/live", health.live, name="health-live"),
