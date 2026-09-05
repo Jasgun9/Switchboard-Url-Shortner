@@ -1,7 +1,8 @@
 from django.contrib import admin
 from django.contrib.sitemaps.views import sitemap
 from django.urls import include, path
-
+from django.templatetags.static import static
+from django.views.generic.base import RedirectView
 from core import health
 from web import views as web_views
 from web.sitemaps import PublicPages
